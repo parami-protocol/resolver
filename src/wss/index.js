@@ -14,12 +14,7 @@ import logger from 'libs/log'
 
 const homedir = os.homedir()
 
-const handleResult = (
-  events,
-  status,
-  socket,
-  payload
-) => {
+const handleResult = (events, status, socket, payload) => {
   if (status.isFinalized) {
     console.log('Completed at block hash', status.asFinalized.toHex())
     console.log('Events:')
@@ -38,13 +33,12 @@ const handleResult = (
     })
 
     if (txStatus) {
-      const { event: { data, method } } = events[events.length - 2]
+      const {
+        event: { data, method }
+      } = events[events.length - 2]
       const msg = data.toString()
- 
-      socket.emit(
-        method,
-        msg
-      )
+
+      socket.emit(method, msg)
     } else {
       socket.emit(
         'tx_failed',
@@ -209,14 +203,7 @@ export default async function prochainWsServer(api, socket) {
       const superior = stringToHex(hashedSocial)
 
       api.tx.did
-        .create(
-          pubkey,
-          address,
-          didType,
-          '',
-          socialAccount,
-          superior
-        )
+        .create(pubkey, address, didType, '', socialAccount, superior)
         .signAndSend(
           signPair,
           { nonce },
@@ -247,12 +234,7 @@ export default async function prochainWsServer(api, socket) {
       )
     } catch (error) {
       console.log(error, 'create_by_sns error')
-      handleResult(
-        {},
-        { error: true },
-        socket,
-        msg
-      )
+      handleResult({}, { error: true }, socket, msg)
     }
     return true
   })
@@ -278,7 +260,7 @@ export default async function prochainWsServer(api, socket) {
       const hashedSocialAccount = blake2AsHex(socialAccount, 256)
       const sAccount = stringToHex(hashedSocialAccount)
       let sSuperior
-      
+
       if (isInit || !socialSuperior) {
         sSuperior = u8aToU8a([])
       } else {
@@ -305,12 +287,7 @@ export default async function prochainWsServer(api, socket) {
         .catch(e => console.log(e, 'internal error'))
     } catch (error) {
       console.log(error, 'create_by_old error')
-      handleResult(
-        {},
-        { error: true },
-        socket,
-        msg
-      )
+      handleResult({}, { error: true }, socket, msg)
     }
   })
 

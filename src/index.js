@@ -5,17 +5,17 @@ import cors from 'cors'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
+import { createApi } from 'libs/util'
 import router from './server/router'
 import config from './config'
 import wsServer from './wss'
 import eventHandler from './wss/event'
 import kafkaConsumer from './kafka'
-import { createApi } from 'libs/util'
 
 const app = Express()
 const server = http.Server(app)
 
-let balancesListeners = []
+const balancesListeners = []
 global.hashName = {}
 
 const entry = async () => {
@@ -25,7 +25,7 @@ const entry = async () => {
   io.on('connection', async socket => {
     // ws server
     wsServer(api, socket)
-    
+
     // listeners
     socket.on('setName', msg => {
       const { name, address } = msg
@@ -34,22 +34,22 @@ const entry = async () => {
 
       if (!balancesListeners.includes(address)) {
         balancesListeners.push(address)
-        api.query.balances.freeBalance(
-          address,
-          current => {
-            console.log(current.toString(), 'balance change---------------------')
-            const curSocketId = global.hashName[name]
-            const toSocket = io.sockets.connected[curSocketId]
-            if (toSocket) {
-              toSocket.emit(
-                'balance_change',
-                JSON.stringify({
-                  balance: current.toString() / 10 ** 15
-                })
-              )
-            }
+        api.query.balances.freeBalance(address, current => {
+          console.log(
+            current.toString(),
+            'balance change---------------------'
+          )
+          const curSocketId = global.hashName[name]
+          const toSocket = io.sockets.connected[curSocketId]
+          if (toSocket) {
+            toSocket.emit(
+              'balance_change',
+              JSON.stringify({
+                balance: current.toString() / 10 ** 15
+              })
+            )
           }
-        )
+        })
       }
     })
   })

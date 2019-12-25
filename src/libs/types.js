@@ -1,5 +1,5 @@
 const types = {
-  Did: "Vec<u8>",
+  Did: 'Vec<u8>',
   ExternalAddress: {
     btc: 'Vec<u8>',
     eth: 'Vec<u8>',

@@ -1,7 +1,7 @@
 import fs from 'fs'
 import bs58 from 'bs58'
 import { blake2AsHex } from '@polkadot/util-crypto'
-import { hexToString, hexToBn, isHex } from '@polkadot/util'
+import { hexToString, isHex } from '@polkadot/util'
 import crypto from 'crypto'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import types from 'libs/types'
@@ -129,12 +129,13 @@ export async function createApi() {
 }
 
 export function formatHexNumber(hexNum) {
-	if (isHex(hexNum)) {
-		return hexNum.toString() / 10 ** 15
-	} else if (typeof hexNum === 'number') {
-		return hexNum / 10 ** 15
-	}
-	return 0
+  let result
+  if (isHex(hexNum)) {
+    result = hexNum.toString() / 10 ** 15
+  } else if (typeof hexNum === 'number') {
+    result = hexNum / 10 ** 15
+  }
+  return result
 }
 
 export function metadataFormat(metadata) {

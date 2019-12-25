@@ -1,4 +1,4 @@
 export default {
-	'bodyLimit': '100kb',
-	'corsHeaders': ['Link']
+  bodyLimit: '100kb',
+  corsHeaders: ['Link']
 }

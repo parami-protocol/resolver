@@ -18,9 +18,7 @@ export default async (req, res, api) => {
   const metadata = await api.query.did.metadata(didHash)
   const result = hexToDid(metadata.did.toString())
 
-  res.json(
-    {
-      result
-    }
-  )
+  res.json({
+    result
+  })
 }

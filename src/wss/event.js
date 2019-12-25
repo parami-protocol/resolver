@@ -1,8 +1,7 @@
-import { hexToString } from '@polkadot/util'
 import { getEventSections, hexToDid } from 'libs/util'
 
 export default async function prochainEvents(api, io) {
-  const hashName = global.hashName
+  const hashName = { global }
   const eventsFilter = getEventSections()
 
   api.query.system.events(events => {
@@ -18,7 +17,7 @@ export default async function prochainEvents(api, io) {
         eventsFilter.includes('all')
       ) {
         const { section, method, data } = event
-        let dataJson = data.toJSON()
+        const dataJson = data.toJSON()
 
         console.log(section, method, phase.toString())
 
@@ -35,13 +34,12 @@ export default async function prochainEvents(api, io) {
                   JSON.stringify([did, superiorDid])
                 )
               }
-            }
               break
+            }
             default:
               break
           }
         }
-        
         // Loop through each of the parameters, displaying the type and data
         // event.data.forEach((data, index) => {
         //   console.log(`\t\t\t${types[index].type}: ${data.toString()}`)
