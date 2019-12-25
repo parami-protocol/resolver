@@ -1,0 +1,10 @@
+.DS_Store
+coverage
+flow-typed
+dist
+build
+node_modules
+*.log
+yarn.lock
+.env
+.env.development

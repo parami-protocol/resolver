@@ -1,0 +1,12 @@
+[ignore]
+.*/dist
+.*/coverage
+[libs]
+flow-typed
+[options]
+module.file_ext=.node
+module.name_mapper='build' -> '<PROJECT_ROOT>/build/Release'
+module.file_ext=.js
+module.name_mapper='libs' -> '<PROJECT_ROOT>/src/libs'
+module.file_ext=.js
+module.name_mapper='src' -> '<PROJECT_ROOT>/src'

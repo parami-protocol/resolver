@@ -1,0 +1,104 @@
+import Express from 'express'
+import http from 'http'
+import sock from 'socket.io'
+import cors from 'cors'
+import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
+import session from 'express-session'
+import router from './server/router'
+import config from './config'
+import wsServer from './wss'
+import eventHandler from './wss/event'
+import kafkaConsumer from './kafka'
+import { createApi } from 'libs/util'
+
+const app = Express()
+const server = http.Server(app)
+
+let balancesListeners = []
+global.hashName = {}
+
+const entry = async () => {
+  const api = await createApi()
+  const io = sock(server)
+
+  io.on('connection', async socket => {
+    // ws server
+    wsServer(api, socket)
+    
+    // listeners
+    socket.on('setName', msg => {
+      const { name, address } = msg
+      console.log(name, 'client name')
+      global.hashName[name] = socket.id
+
+      if (!balancesListeners.includes(address)) {
+        balancesListeners.push(address)
+        api.query.balances.freeBalance(
+          address,
+          current => {
+            console.log(current.toString(), 'balance change---------------------')
+            const curSocketId = global.hashName[name]
+            const toSocket = io.sockets.connected[curSocketId]
+            if (toSocket) {
+              toSocket.emit(
+                'balance_change',
+                JSON.stringify({
+                  balance: current.toString() / 10 ** 15
+                })
+              )
+            }
+          }
+        )
+      }
+    })
+  })
+
+  // events listener
+  eventHandler(api, io)
+
+  // kafka consumer
+  kafkaConsumer(api)
+
+  app.use(cookieParser())
+
+  app.use(
+    session({
+      secret: 'prochain',
+      resave: false,
+      saveUninitialized: true,
+      cookie: { secure: true }
+    })
+  )
+
+  app.use(
+    cors({
+      exposedHeaders: config.corsHeaders,
+      credentials: true
+    })
+  )
+
+  app.use(
+    bodyParser.json({
+      limit: config.bodyLimit
+    })
+  )
+
+  app.use(
+    bodyParser.urlencoded({
+      extended: false
+    })
+  )
+
+  app.use('/api', router({ config, api }))
+
+  app.get('/', (req, res) => {
+    res.sendFile(`${process.cwd()}/public/index.html`)
+  })
+
+  server.listen(process.env.PORT, () => {
+    console.log(`listening on *:${process.env.PORT}`)
+  })
+}
+
+entry().catch(console.log)
