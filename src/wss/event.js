@@ -12,10 +12,7 @@ export default async function prochainEvents(api, io) {
 
       // const types = event.typeDef
       // check section filter
-      if (
-        eventsFilter.includes(event.section.toString()) ||
-        eventsFilter.includes('all')
-      ) {
+      if (eventsFilter.includes(event.section.toString()) || eventsFilter.includes('all')) {
         const { section, method, data } = event
         const dataJson = data.toJSON()
 

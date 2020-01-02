@@ -4,7 +4,7 @@
     <title>chain server</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
+      body { font: 15px Helvetica, Arial; }
       .container {
         width: 1200px;
         margin: 20px auto;
@@ -26,13 +26,15 @@
   </head>
   <body>
     <div class="container">
-      <button class="create-genesis">创世账号</button>
-      <button class="create-old">老账号</button>
-      <button class="create-new">新账号</button>
+      <button class="create-genesis">初始化</button>
+      <span>
+        创建创世账号，创建初始群主DID，抵押PRA
+      </span>
+      <br>
       <button class="create-sns">社交账号</button>
       <button class="lock">抵押</button>
       <button class="unlock">赎回</button>
-      <button class="set-name">设置团队名称</button>
+      <button class="test">Test</button>
     </div>
     <script src="https://cdn.bootcss.com/socket.io/2.2.0/socket.io.slim.js"></script>
     <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.slim.min.js"></script>
@@ -40,47 +42,50 @@
       $(function() {
         const socket = io();
         $('.create-genesis').click(function() {
-          console.log('create genesis')
+          console.log('create genesis')          
+          // 创世账号
           const data = JSON.stringify({
             superior: '',
             address: '5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r',
             pubkey: '0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f',
-            type: '1',
-            socialAccount: 'newfeiyang',
-            isInit: true
+            didType: '1',
+            socialAccount: 'newfeiyang'
           })
   
           socket.emit('create_by_old', data)
-        })
+          
+          // 创世群
+          setTimeout(() => {
+            const data = JSON.stringify({
+              superior: '',
+              address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51', // Airdrop
+              pubkey: '0x0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435',
+              didType: '1',
+              socialAccount: 'wxid_7h9gf2umzeja22', // pratest1111  般若超级节点
+              socialSuperior: 'newfeiyang'
+            })
+    
+            socket.emit('create_by_old', data)
+          }, 4500)
 
-        $('.create-old').click(function() {
-          console.log('create old')
-          const data = JSON.stringify({
-            superior: '',
-            address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51', // Airdrop
-            pubkey: '0x0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435',
-            type: '1',
-            socialAccount: 'wxid_7h9gf2umzeja22', // pratest1111  般若超级节点
-            socialSuperior: 'newfeiyang',
-            isInit: false
-          })
-  
-          socket.emit('create_by_old', data)
-        })
+          // 抵押pra
+          setTimeout(() => {
+            const amount = 50 * Math.pow(10, 15)
+            const data = JSON.stringify({
+              address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51',
+              method: 'lock',
+              params: [amount, 10]
+            })
 
-        $('.create-new').click(function() {
-          console.log('create new account')
-          const data = JSON.stringify({
-            superior: 'did:pra:5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
-          })
-  
-          socket.emit('create', data)
+            console.log(data, 'lock data')
+            socket.emit('sign', data)
+          }, 9000)
         })
 
         $('.create-sns').click(function() {
           console.log('create sns account')
           const data = JSON.stringify({
-            type: '1',
+            didType: '1',
             sid: 'testwsgq',
             socialSuperior: 'wxid_7h9gf2umzeja22',
           })
@@ -91,7 +96,7 @@
         $('.lock').click(function() {
           const amount = 50 * Math.pow(10, 15)
           const data = JSON.stringify({
-            address: '5FkLsKx5NB82JeHGEQbmcWY8ifDQ3KQqmJgPtD5zZxGstTLb',
+            address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51',
             method: 'lock',
             params: [amount, 10]
           })
@@ -104,7 +109,7 @@
           const amount = 50 * Math.pow(10, 15)
 
           const data = JSON.stringify({
-            address: '5FkLsKx5NB82JeHGEQbmcWY8ifDQ3KQqmJgPtD5zZxGstTLb',
+            address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51',
             method: 'unlock',
             params: [amount]
           })
@@ -113,15 +118,18 @@
           socket.emit('sign', data)
         })
 
-        $('.set-name').click(function() {
+        $('.test').click(function() {
+          const amount = 0.01 * Math.pow(10, 15)
           const data = JSON.stringify({
-            address: '5FkLsKx5NB82JeHGEQbmcWY8ifDQ3KQqmJgPtD5zZxGstTLb',
-            method: 'setGroupName',
-            params: ['prochain']
+            id: '123456789',
+            did: 'did:pra:LuEBwxYKaTdNYfXYkM7uCumbbaAh6ks4JD',
+            amount
           })
 
-          console.log(data, 'set group name')
-          socket.emit('sign', data)
+          
+          for(let i=0;i < 100;i++) {
+            socket.emit('kt', data)
+          }
         })
 
         socket.on('connect', function() {
@@ -134,13 +142,6 @@
           socket.on('tx_failed', msg => {
             console.log(msg, 'create failed')
           })
-  
-          const data = JSON.stringify({
-            superior: 'did:pra:5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
-          })
-  
-          // 0x01fdac14e7d3a031a01b7ca7dd206909b04306be25f2786fd7d0b4acbe04b9b7  hex did
-          // socket.emit('create', data);
   
         })
   

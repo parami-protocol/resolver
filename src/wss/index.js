@@ -2,19 +2,17 @@ import fs from 'fs'
 import os from 'os'
 import { mnemonicGenerate, blake2AsHex } from '@polkadot/util-crypto'
 import Keyring from '@polkadot/keyring'
-import {
-  u8aToHex,
-  u8aToU8a,
-  stringToHex,
-  stringToU8a,
-  numberToHex
-} from '@polkadot/util'
+import { stringToHex, stringToU8a, numberToHex } from '@polkadot/util'
 import { didToHex } from 'libs/util'
 import logger from 'libs/log'
 
 const homedir = os.homedir()
 
+// 全局手动管理nonce
+global.nonceMap = {}
+
 const handleResult = (events, status, socket, payload) => {
+  console.log('Transaction status:', status.type)
   if (status.isFinalized) {
     console.log('Completed at block hash', status.asFinalized.toHex())
     console.log('Events:')
@@ -69,106 +67,58 @@ const handleResult = (events, status, socket, payload) => {
   }
 }
 
-const getPair = () => {
-  return new Promise((resolve, reject) => {
-    fs.readFile(
-      `${homedir}/.substrate/prochain-fund-account`,
-      async (err, res) => {
-        if (err) {
-          reject(err)
-        } else {
-          const keyring = new Keyring({ type: 'sr25519' })
-
-          const seed = res.toString().replace(/[\r\n]/g, '')
-          const pair = keyring.addFromMnemonic(seed)
-
-          resolve(pair)
-        }
-      }
-    )
-  })
+const handleInternalError = (e, address) => {
+  logger.error(e, 'internal error')
+  console.log(e, 'internal error')
+  if (address) {
+    global.nonceMap[address] -= 1
+  }
 }
 
-export default async function prochainWsServer(api, socket) {
-  const signPair = await getPair()
+const updateNonceTimer = (api, address) => {
+  setInterval(async () => {
+    global.nonceMap[address] = await api.query.system.accountNonce(
+      address
+    )
+    console.log(
+      'new nonce for address:',
+      address,
+      global.nonceMap[address]
+    )
+  }, 1000 * 60)
+}
 
-  socket.on('create', async msg => {
-    try {
-      const mnemonicPhrase = mnemonicGenerate()
-      const keyring = new Keyring({ type: 'sr25519' })
-      const pair = keyring.addFromMnemonic(mnemonicPhrase)
+const getSigner = (api) => new Promise((resolve, reject) => {
+  fs.readFile(
+    `${homedir}/.substrate/prochain-fund-account`,
+    async (err, res) => {
+      if (err) {
+        reject(err)
+      } else {
+        const keyring = new Keyring({ type: 'sr25519' })
 
-      const { superior } = JSON.parse(msg)
+        const seed = res.toString().replace(/[\r\n]/g, '')
+        const pair = keyring.addFromMnemonic(seed)
 
-      const { address, publicKey } = pair
-      const pairKeystore = JSON.stringify(
-        keyring.toJson(address, address.substr(0, 6)),
-        null,
-        2
-      )
-      const pairSeed = JSON.stringify({
-        address,
-        seed: mnemonicPhrase
-      })
-      console.log(address, 'new address')
+        global.nonceMap[pair.address] = await api.query.system.accountNonce(pair.address)
 
-      const nonce = await api.query.system.accountNonce(
-        signPair.address
-      )
-
-      const mySuperior = didToHex(superior)
-      const pubkey = u8aToHex(publicKey)
-      const didType = stringToHex('1')
-
-      api.tx.did
-        .create(
-          pubkey,
-          address,
-          didType,
-          mySuperior,
-          u8aToU8a([]),
-          u8aToU8a([])
-        )
-        .signAndSend(
-          signPair,
-          { nonce },
-          ({ events = [], status }) => {
-            console.log('Transaction status:', status.type)
-            handleResult(events, status, socket, 'create')
-          }
-        )
-        .catch(e => console.log(e, 'internal error'))
-      fs.writeFile(
-        `${homedir}/.substrate/wallet/key_stores/${address}.json`,
-        pairKeystore,
-        err => {
-          if (err) return console.log(err)
-          console.log('create key pair successfully')
-          return true
-        }
-      )
-
-      fs.writeFile(
-        `${homedir}/.substrate/wallet/keys/${address}.json`,
-        pairSeed,
-        err => {
-          if (err) return console.log(err)
-          console.log('save pair seed successfully')
-          return true
-        }
-      )
-    } catch (error) {
-      console.log(error, 'create error')
-      handleResult({}, { error: true }, socket, 'create')
+        resolve(pair)
+      }
     }
-  })
+  )
+})
 
+export default async function prochainWsServer(api, socket) {
+  const signer = await getSigner(api)
+
+  updateNonceTimer(api, signer.address)
   socket.on('create_by_sns', async msg => {
     try {
       const { sid, type, socialSuperior } = JSON.parse(msg)
       // social accounnt
       const hashedSid = blake2AsHex(sid, 256)
       const hash = blake2AsHex(stringToU8a(`${hashedSid}1`), 256)
+
       // social superior
       const hashedSocial = blake2AsHex(socialSuperior, 256)
       const socialHash = await api.query.did.socialAccount(hash)
@@ -179,40 +129,36 @@ export default async function prochainWsServer(api, socket) {
 
       const mnemonicPhrase = mnemonicGenerate()
       const keyring = new Keyring({ type: 'sr25519' })
-      const pair = keyring.addFromMnemonic(mnemonicPhrase)
+      const { address, publicKey } = keyring.addFromMnemonic(mnemonicPhrase)
 
-      const { address, publicKey } = pair
+      // save keystore
       const pairKeystore = JSON.stringify(
-        keyring.toJson(address, 'test123456'),
+        keyring.toJson(address, address.substr(0, 6)),
         null,
         2
       )
+
+      // save mnemonic phrase
       const pairSeed = JSON.stringify({
         address,
         seed: mnemonicPhrase
       })
-      console.log(address, 'new address')
 
-      const nonce = await api.query.system.accountNonce(
-        signPair.address
-      )
+      // increase nonce
+      global.nonceMap[signer.address] += 1
 
-      const pubkey = u8aToHex(publicKey)
+      const nonce = global.nonceMap[signer.address]
       const didType = stringToHex(type)
       const socialAccount = stringToHex(hashedSid)
       const superior = stringToHex(hashedSocial)
-
       api.tx.did
-        .create(pubkey, address, didType, '', socialAccount, superior)
-        .signAndSend(
-          signPair,
-          { nonce },
+        .create(publicKey, address, didType, '', socialAccount, superior)
+        .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            console.log('Transaction status:', status.type)
             handleResult(events, status, socket, msg)
-          }
-        )
-        .catch(e => console.log(e, 'internal error'))
+          })
+        .catch(e => handleInternalError(e, signer.address))
+
       fs.writeFile(
         `${homedir}/.substrate/wallet/key_stores/${address}.json`,
         pairKeystore,
@@ -233,7 +179,7 @@ export default async function prochainWsServer(api, socket) {
         }
       )
     } catch (error) {
-      console.log(error, 'create_by_sns error')
+      console.log(error, 'create by sns error')
       handleResult({}, { error: true }, socket, msg)
     }
     return true
@@ -241,31 +187,18 @@ export default async function prochainWsServer(api, socket) {
 
   socket.on('create_by_old', async msg => {
     try {
-      const {
-        pubkey,
-        address,
-        type,
-        superior,
-        socialAccount,
-        socialSuperior,
-        isInit
-      } = JSON.parse(msg)
+      /* eslint-disable */
+      let { pubkey, address, didType, superior, socialAccount, socialSuperior } = JSON.parse(msg)
 
-      const nonce = await api.query.system.accountNonce(
-        signPair.address
-      )
+      // increase nonce
+      global.nonceMap[signer.address] += 1
 
-      const didType = stringToHex(type)
+      const nonce = global.nonceMap[signer.address]
 
-      const hashedSocialAccount = blake2AsHex(socialAccount, 256)
-      const sAccount = stringToHex(hashedSocialAccount)
-      let sSuperior
-
-      if (isInit || !socialSuperior) {
-        sSuperior = u8aToU8a([])
-      } else {
-        sSuperior = stringToHex(blake2AsHex(socialSuperior, 256))
-      }
+      superior = superior && didToHex(superior)
+      didType = stringToHex(didType)
+      socialAccount = socialAccount && stringToHex(blake2AsHex(socialAccount, 256))
+      socialSuperior = socialSuperior && stringToHex(blake2AsHex(socialSuperior, 256))
 
       api.tx.did
         .create(
@@ -273,18 +206,14 @@ export default async function prochainWsServer(api, socket) {
           address,
           didType,
           superior,
-          sAccount,
-          sSuperior
+          socialAccount,
+          socialSuperior
         )
-        .signAndSend(
-          signPair,
-          { nonce },
+        .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            console.log('Transaction status:', status.type)
             handleResult(events, status, socket, msg)
-          }
-        )
-        .catch(e => console.log(e, 'internal error'))
+          })
+        .catch(e => handleInternalError(e, signer.address))
     } catch (error) {
       console.log(error, 'create_by_old error')
       handleResult({}, { error: true }, socket, msg)
@@ -320,11 +249,10 @@ export default async function prochainWsServer(api, socket) {
               pair,
               { nonce },
               ({ events = [], status }) => {
-                console.log('Transaction status:', status.type)
                 handleResult(events, status, socket, msg)
               }
             )
-            .catch(e => console.log(e, 'internal error'))
+            .catch(handleInternalError)
         } catch (error) {
           console.log(error, 'sign error-----')
           handleResult({}, { error: true }, socket, msg)

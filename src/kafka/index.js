@@ -47,6 +47,7 @@ export default async function kafkaConsumer(api) {
 
   const producer = kafka.producer()
   const consumer = kafka.consumer({ groupId: 'group-test' })
+
   try {
     // Producing
     await producer.connect()
@@ -60,9 +61,9 @@ export default async function kafkaConsumer(api) {
 
     await consumer.run({
       eachMessage: async ({ message }) => {
-        const { id, did, amount, addressType } = JSON.parse(
-          message.value.toString()
-        )
+        const {
+          id, did, amount, addressType
+        } = JSON.parse(message.value.toString())
 
         fs.readFile(
           `${homedir}/.substrate/prochain-fund-account`,
@@ -79,10 +80,16 @@ export default async function kafkaConsumer(api) {
             const seed = res.toString().replace(/[\r\n]/g, '')
             const pair = keyring.addFromMnemonic(seed)
 
-            const nonce = await api.query.system.accountNonce(
-              pair.address
-            )
-            console.log(amount, 'did transfer---------')
+            let nonce
+            if (!global.nonceMap[pair.address]) {
+              nonce = await api.query.system.accountNonce(
+                pair.address
+              )
+            } else {
+              global.nonceMap[pair.address] += 1
+              nonce = global.nonceMap[pair.address]
+            }
+            console.log(amount, nonce, 'did transfer---------')
 
             // transfer from airdrop account
             api.tx.did
@@ -95,6 +102,10 @@ export default async function kafkaConsumer(api) {
                   handleKafkaEvent(events, status, id, producer)
                 }
               )
+              .catch(e => {
+                console.log(e, 'kafka internal error')
+                global.nonceMap[pair.address] -= 1
+              })
             return true
           }
         )

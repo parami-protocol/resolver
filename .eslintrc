@@ -3,8 +3,6 @@
   "extends": [
     "airbnb-base",
     "plugin:flowtype/recommended",
-    "plugin:prettier/recommended",
-    "prettier/flowtype"
   ],
   "plugins": ["flowtype", "flowtype-errors"],
   "env": {
@@ -36,7 +34,10 @@
   },
   "rules": {
     "flowtype-errors/show-errors": "error",
-    "prettier/prettier": ["error"],
-    "no-console": ["off"]
+    "no-console": ["off"],
+    "semi": [2, "never"],
+    "quotes": [2, "single"],
+    "comma-dangle": [2, "never"],
+    "arrow-parens": "off"
   }
 }
