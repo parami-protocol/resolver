@@ -4,6 +4,7 @@ import { mnemonicGenerate, blake2AsHex } from '@polkadot/util-crypto'
 import Keyring from '@polkadot/keyring'
 import { stringToHex, stringToU8a, numberToHex } from '@polkadot/util'
 import { didToHex } from 'libs/util'
+import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
 
 const homedir = os.homedir()
@@ -221,6 +222,7 @@ export default async function prochainWsServer(api, socket) {
   })
 
   socket.on('sign', async msg => {
+    await checkAuth()
     const { address, method, params } = JSON.parse(msg)
     console.log(address, method, params, 'sign')
 

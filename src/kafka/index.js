@@ -62,24 +62,18 @@ export default async function kafkaConsumer(api) {
     await consumer.run({
       eachMessage: async ({ message }) => {
         const {
-          id, did, amount, addressType
+          id, from_did: fromDid, to_did: toDid, amount, memo
         } = JSON.parse(message.value.toString())
 
         fs.readFile(
           `${homedir}/.substrate/prochain-fund-account`,
           async (err, res) => {
             if (err) return console.log(err, 'read key failed')
-
-            let receiver = didToHex(did)
-            if (addressType === 'address') {
-              receiver = await api.query.did.identity(did)
-            }
-
             const keyring = new Keyring({ type: 'sr25519' })
-
             const seed = res.toString().replace(/[\r\n]/g, '')
             const pair = keyring.addFromMnemonic(seed)
 
+            const receiver = didToHex(toDid)
             let nonce
             if (!global.nonceMap[pair.address]) {
               nonce = await api.query.system.accountNonce(
@@ -89,11 +83,11 @@ export default async function kafkaConsumer(api) {
               global.nonceMap[pair.address] += 1
               nonce = global.nonceMap[pair.address]
             }
-            console.log(amount, nonce, 'did transfer---------')
+            console.log(fromDid, amount, nonce, 'did transfer---------')
 
             // transfer from airdrop account
             api.tx.did
-              .transfer(receiver, numberToHex(+amount), 'lottery')
+              .transfer(receiver, numberToHex(+amount), memo)
               .signAndSend(
                 pair,
                 { nonce },
