@@ -1,4 +1,5 @@
 import fs from 'fs'
+import os from 'os'
 import bs58 from 'bs58'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { hexToString, isHex } from '@polkadot/util'
@@ -189,6 +190,22 @@ export function getEventSections() {
       return ["all"]
   }
 }
+
+/*
+获取本机IP
+*/
+export function getIPAdress() {  
+  let interfaces = os.networkInterfaces()
+  for (let devName in interfaces) {
+    let iface = interfaces[devName]
+    for (let i=0;i < iface.length; i++) {
+      let alias = iface[i];  
+      if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {  
+        return alias.address
+      }
+    }
+  }  
+} 
 
 export class NonceManager {
   constructor(api) {

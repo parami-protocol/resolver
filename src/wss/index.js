@@ -3,7 +3,7 @@ import os from 'os'
 import { mnemonicGenerate, blake2AsHex } from '@polkadot/util-crypto'
 import Keyring from '@polkadot/keyring'
 import { stringToHex, stringToU8a, numberToHex } from '@polkadot/util'
-import { didToHex, NonceManager } from 'libs/util'
+import { didToHex, NonceManager, getIPAdress } from 'libs/util'
 import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
 
@@ -194,6 +194,8 @@ export default async function prochainWsServer(api, socket) {
       const { address, method, params, token } = JSON.parse(msg)
 
       // auth check
+      const ipAdd = getIPAdress()
+      console.log(ipAdd, '------1111-------')
       const rs = await checkAuth(token)
       if (!rs.success) {
         console.log(rs.message)
