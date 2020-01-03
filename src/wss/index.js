@@ -57,7 +57,6 @@ const handleResult = (events, status, socket, payload) => {
     socket.emit(
       'tx_failed',
       JSON.stringify({
-        origin,
         msg: 'sign error, please try again',
         payload
       })
@@ -192,10 +191,15 @@ export default async function prochainWsServer(api, socket) {
 
   socket.on('sign', async msg => {
     try {
-      const { address, method, params } = JSON.parse(msg)
+      const { address, method, params, token } = JSON.parse(msg)
 
       // auth check
-      await checkAuth()
+      const rs = await checkAuth(token)
+      if (!rs.success) {
+        console.log(rs.message)
+        handleResult({}, { error: true }, socket, rs.message)
+        return false
+      }
 
       const res = fs.readFileSync(`${homedir}/.substrate/wallet/keys/${address}.json`)
       const keyring = new Keyring({ type: 'sr25519' })
@@ -212,7 +216,7 @@ export default async function prochainWsServer(api, socket) {
           params[i] = numberToHex(num)
         }
       }
-      
+
       console.log(address, method, params, 'sign')
       api.tx.did[method](...params)
         .signAndSend(pair, { nonce },
