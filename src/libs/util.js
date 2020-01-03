@@ -256,8 +256,8 @@ export class NonceManager {
       console.log(
         'new nonce for address:',
         address,
-        global.nonceMap[address]
+        global.nonceMap[address].toNumber()
       )
-    }, 1000 * 60)
+    }, 1000 * 20)
   }
 }
