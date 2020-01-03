@@ -86,9 +86,11 @@ export function didToHex(did) {
 export function hexToDid(hex) {
   const bytes = Buffer.from(hex.slice(2), 'hex')
   const address = bs58.encode(bytes)
-  const did = `did:pra:${address}`
+  if (address) {
+    return `did:pra:${address}`
+  }
 
-  return did
+  return ''
 }
 
 export function encrypt(buffer) {
@@ -147,7 +149,7 @@ export function metadataFormat(metadata) {
       const item = metadata[key]
       switch (key) {
         case 'did':
-          metadata[key] = metadata[key] && hexToDid(item)
+          metadata[key] = hexToDid(item)
           break
         case 'external_address': {
           let { btc, eos, eth } = item
