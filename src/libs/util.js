@@ -147,7 +147,7 @@ export function metadataFormat(metadata) {
       const item = metadata[key]
       switch (key) {
         case 'did':
-          metadata[key] = hexToDid(item)
+          metadata[key] = metadata[key] && hexToDid(item)
           break
         case 'external_address': {
           let { btc, eos, eth } = item
