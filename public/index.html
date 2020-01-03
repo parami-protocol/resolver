@@ -31,6 +31,7 @@
         创建创世账号，创建初始群主DID，抵押PRA
       </span>
       <br>
+      <button class="create-old">老账号</button>
       <button class="create-sns">社交账号</button>
       <button class="lock">抵押</button>
       <button class="unlock">赎回</button>
@@ -80,6 +81,20 @@
             console.log(data, 'lock data')
             socket.emit('sign', data)
           }, 9000)
+        })
+        
+        $('.create-old').click(function() {
+          const data = JSON.stringify({
+            superior: '',
+            address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51', // Airdrop
+            pubkey: '0x0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435',
+            didType: '1',
+            socialAccount: 'wxid_7h9gf2umzeja22', // pratest1111  般若超级节点
+            socialSuperior: 'newfeiyang'
+          })
+          
+          console.log('create old', data)
+          socket.emit('create_by_old', data)
         })
 
         $('.create-sns').click(function() {

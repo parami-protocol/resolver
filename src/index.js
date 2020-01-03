@@ -16,6 +16,9 @@ const app = Express()
 const server = http.Server(app)
 
 const balancesListeners = []
+
+// 全局变量
+global.nonceMap = {}
 global.hashName = {}
 
 const entry = async () => {

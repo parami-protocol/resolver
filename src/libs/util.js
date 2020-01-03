@@ -189,3 +189,57 @@ export function getEventSections() {
       return ["all"]
   }
 }
+
+export class NonceManager {
+  constructor(api) {
+    this.api = api
+    this.timerMap = {}
+  }
+
+  async init(address) {
+    global.nonceMap[address] = await this.api.query.system.accountNonce(address)
+
+    this.update(address)
+
+    return global.nonceMap[address]
+  }
+
+  exists(address) {
+    if (global.nonceMap[address]) {
+      return true
+    } else {
+      return false
+    }
+  }
+
+  async getNonce(address) {
+    if (!this.exists(address)) {
+      return await this.init(address)
+    }
+
+    return this.add(address)
+  }
+
+  add(address) {
+    global.nonceMap[address] = global.nonceMap[address] - 0 + 1
+    return global.nonceMap[address]
+  }
+
+  sub(address) {
+    global.nonceMap[address] = global.nonceMap[address] -= 1
+    return global.nonceMap[address]
+  }
+
+  update(address) {
+    const curTimer = this.timerMap[address]
+    if (curTimer) clearInterval(curTimer)
+    this.timerMap[address] = setInterval(async () => {
+      global.nonceMap[address] = await this.api.query.system.accountNonce(address)
+      console.log(
+        'new nonce for address:',
+        address,
+        global.nonceMap[address]
+      )
+    }, 1000 * 60)
+  }
+}

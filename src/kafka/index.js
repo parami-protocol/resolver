@@ -3,7 +3,7 @@ import fs from 'fs'
 import { Kafka } from 'kafkajs'
 import Keyring from '@polkadot/keyring'
 import { numberToHex } from '@polkadot/util'
-import { didToHex } from 'libs/util'
+import { didToHex, NonceManager } from 'libs/util'
 
 const handleKafkaEvent = (events, status, id, producer) => {
   if (status.isFinalized) {
@@ -44,9 +44,9 @@ export default async function kafkaConsumer(api) {
     clientId: 'my-app',
     brokers: ['172.21.0.23:9092']
   })
-
   const producer = kafka.producer()
   const consumer = kafka.consumer({ groupId: 'group-test' })
+  const nonceManager = new NonceManager(api)
 
   try {
     // Producing
@@ -65,44 +65,27 @@ export default async function kafkaConsumer(api) {
           id, from_did: fromDid, to_did: toDid, amount, memo
         } = JSON.parse(message.value.toString())
 
-        fs.readFile(
-          `${homedir}/.substrate/prochain-fund-account`,
-          async (err, res) => {
-            if (err) return console.log(err, 'read key failed')
-            const keyring = new Keyring({ type: 'sr25519' })
-            const seed = res.toString().replace(/[\r\n]/g, '')
-            const pair = keyring.addFromMnemonic(seed)
+        const res = fs.readFileSync(`${homedir}/.substrate/${fromDid}`)
+        const keyring = new Keyring({ type: 'sr25519' })
+        const seed = res.toString().replace(/[\r\n]/g, '')
+        const pair = keyring.addFromMnemonic(seed)
 
-            const receiver = didToHex(toDid)
-            let nonce
-            if (!global.nonceMap[pair.address]) {
-              nonce = await api.query.system.accountNonce(
-                pair.address
-              )
-            } else {
-              global.nonceMap[pair.address] += 1
-              nonce = global.nonceMap[pair.address]
-            }
-            console.log(fromDid, amount, nonce, 'did transfer---------')
+        const receiver = didToHex(toDid)
+        const nonce = await nonceManager.getNonce(pair.address)
+        console.log(fromDid, amount, nonce, 'did transfer---------')
 
-            // transfer from airdrop account
-            api.tx.did
-              .transfer(receiver, numberToHex(+amount), memo)
-              .signAndSend(
-                pair,
-                { nonce },
-                ({ events = [], status }) => {
-                  console.log('Transaction status:', status.type)
-                  handleKafkaEvent(events, status, id, producer)
-                }
-              )
-              .catch(e => {
-                console.log(e, 'kafka internal error')
-                global.nonceMap[pair.address] -= 1
-              })
-            return true
-          }
-        )
+        // transfer from airdrop account
+        api.tx.did
+          .transfer(receiver, numberToHex(+amount), memo)
+          .signAndSend(pair, { nonce },
+            ({ events = [], status }) => {
+              console.log('Transaction status:', status.type)
+              handleKafkaEvent(events, status, id, producer)
+            })
+          .catch(e => {
+            console.log(e, 'kafka internal error')
+            nonceManager.sub(pair.address)
+          })
       }
     })
   } catch (error) {

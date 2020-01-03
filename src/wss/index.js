@@ -3,14 +3,11 @@ import os from 'os'
 import { mnemonicGenerate, blake2AsHex } from '@polkadot/util-crypto'
 import Keyring from '@polkadot/keyring'
 import { stringToHex, stringToU8a, numberToHex } from '@polkadot/util'
-import { didToHex } from 'libs/util'
+import { didToHex, NonceManager } from 'libs/util'
 import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
 
 const homedir = os.homedir()
-
-// 全局手动管理nonce
-global.nonceMap = {}
 
 const handleResult = (events, status, socket, payload) => {
   console.log('Transaction status:', status.type)
@@ -68,28 +65,15 @@ const handleResult = (events, status, socket, payload) => {
   }
 }
 
-const handleInternalError = (e, address) => {
-  logger.error(e, 'internal error')
-  console.log(e, 'internal error')
+const handleInternalError = (error, address, nonceManager) => {
+  logger.error(error, 'internal error')
+  console.log(error, 'internal error')
   if (address) {
-    global.nonceMap[address] -= 1
+    nonceManager.sub(address)
   }
 }
 
-const updateNonceTimer = (api, address) => {
-  setInterval(async () => {
-    global.nonceMap[address] = await api.query.system.accountNonce(
-      address
-    )
-    console.log(
-      'new nonce for address:',
-      address,
-      global.nonceMap[address]
-    )
-  }, 1000 * 60)
-}
-
-const getSigner = (api) => new Promise((resolve, reject) => {
+const getSigner = () => new Promise((resolve, reject) => {
   fs.readFile(
     `${homedir}/.substrate/prochain-fund-account`,
     async (err, res) => {
@@ -101,8 +85,6 @@ const getSigner = (api) => new Promise((resolve, reject) => {
         const seed = res.toString().replace(/[\r\n]/g, '')
         const pair = keyring.addFromMnemonic(seed)
 
-        global.nonceMap[pair.address] = await api.query.system.accountNonce(pair.address)
-
         resolve(pair)
       }
     }
@@ -110,9 +92,10 @@ const getSigner = (api) => new Promise((resolve, reject) => {
 })
 
 export default async function prochainWsServer(api, socket) {
-  const signer = await getSigner(api)
+  const signer = await getSigner()
+  // nonce manager
+  const nonceManager = new NonceManager(api)
 
-  updateNonceTimer(api, signer.address)
   socket.on('create_by_sns', async msg => {
     try {
       const { sid, type, socialSuperior } = JSON.parse(msg)
@@ -145,10 +128,7 @@ export default async function prochainWsServer(api, socket) {
         seed: mnemonicPhrase
       })
 
-      // increase nonce
-      global.nonceMap[signer.address] += 1
-
-      const nonce = global.nonceMap[signer.address]
+      const nonce = await nonceManager.getNonce(signer.address)
       const didType = stringToHex(type)
       const socialAccount = stringToHex(hashedSid)
       const superior = stringToHex(hashedSocial)
@@ -158,7 +138,7 @@ export default async function prochainWsServer(api, socket) {
           ({ events = [], status }) => {
             handleResult(events, status, socket, msg)
           })
-        .catch(e => handleInternalError(e, signer.address))
+        .catch(e => handleInternalError(e, signer.address, nonceManager))
 
       fs.writeFile(
         `${homedir}/.substrate/wallet/key_stores/${address}.json`,
@@ -190,11 +170,7 @@ export default async function prochainWsServer(api, socket) {
     try {
       /* eslint-disable */
       let { pubkey, address, didType, superior, socialAccount, socialSuperior } = JSON.parse(msg)
-
-      // increase nonce
-      global.nonceMap[signer.address] += 1
-
-      const nonce = global.nonceMap[signer.address]
+      const nonce = await nonceManager.getNonce(signer.address)
 
       superior = superior && didToHex(superior)
       didType = stringToHex(didType)
@@ -202,19 +178,12 @@ export default async function prochainWsServer(api, socket) {
       socialSuperior = socialSuperior && stringToHex(blake2AsHex(socialSuperior, 256))
 
       api.tx.did
-        .create(
-          pubkey,
-          address,
-          didType,
-          superior,
-          socialAccount,
-          socialSuperior
-        )
+        .create(pubkey, address, didType, superior, socialAccount, socialSuperior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
             handleResult(events, status, socket, msg)
           })
-        .catch(e => handleInternalError(e, signer.address))
+        .catch(e => handleInternalError(e, signer.address, nonceManager))
     } catch (error) {
       console.log(error, 'create_by_old error')
       handleResult({}, { error: true }, socket, msg)
@@ -226,41 +195,33 @@ export default async function prochainWsServer(api, socket) {
     const { address, method, params } = JSON.parse(msg)
     console.log(address, method, params, 'sign')
 
-    fs.readFile(
-      `${homedir}/.substrate/wallet/keys/${address}.json`,
-      async (err, res) => {
-        if (err) return console.log(err, 'read key json failed')
-        const keyring = new Keyring({ type: 'sr25519' })
+    try {
+      const res = fs.readFileSync(`${homedir}/.substrate/wallet/keys/${address}.json`)
+      const keyring = new Keyring({ type: 'sr25519' })
 
-        const { seed } = JSON.parse(res.toString())
-        const pair = keyring.addFromMnemonic(seed)
+      const { seed } = JSON.parse(res.toString())
+      const pair = keyring.addFromMnemonic(seed)
 
-        const nonce = await api.query.system.accountNonce(address)
+      const nonce = await api.query.system.accountNonce(address)
 
-        /*  eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }]  */
-        for (let i = 0; i < params.length; i++) {
-          const num = params[i]
-          if (typeof num === 'number') {
-            params[i] = numberToHex(num)
-          }
+      /*  eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }]  */
+      for (let i = 0; i < params.length; i++) {
+        const num = params[i]
+        if (typeof num === 'number') {
+          params[i] = numberToHex(num)
         }
-
-        try {
-          api.tx.did[method](...params)
-            .signAndSend(
-              pair,
-              { nonce },
-              ({ events = [], status }) => {
-                handleResult(events, status, socket, msg)
-              }
-            )
-            .catch(handleInternalError)
-        } catch (error) {
-          console.log(error, 'sign error-----')
-          handleResult({}, { error: true }, socket, msg)
-        }
-        return true
       }
-    )
+
+      api.tx.did[method](...params)
+        .signAndSend(pair, { nonce },
+          ({ events = [], status }) => {
+            handleResult(events, status, socket, msg)
+          }
+        )
+        .catch(handleInternalError)
+    } catch (error) {
+      console.log(error, 'sign error-----')
+      handleResult({}, { error: true }, socket, msg)
+    }
   })
 }
