@@ -191,11 +191,12 @@ export default async function prochainWsServer(api, socket) {
   })
 
   socket.on('sign', async msg => {
-    await checkAuth()
-    const { address, method, params } = JSON.parse(msg)
-    console.log(address, method, params, 'sign')
-
     try {
+      const { address, method, params } = JSON.parse(msg)
+
+      // auth check
+      await checkAuth()
+
       const res = fs.readFileSync(`${homedir}/.substrate/wallet/keys/${address}.json`)
       const keyring = new Keyring({ type: 'sr25519' })
 
@@ -211,7 +212,8 @@ export default async function prochainWsServer(api, socket) {
           params[i] = numberToHex(num)
         }
       }
-
+      
+      console.log(address, method, params, 'sign')
       api.tx.did[method](...params)
         .signAndSend(pair, { nonce },
           ({ events = [], status }) => {
