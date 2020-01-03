@@ -2,7 +2,9 @@ import fs from 'fs'
 import os from 'os'
 import { mnemonicGenerate, blake2AsHex } from '@polkadot/util-crypto'
 import Keyring from '@polkadot/keyring'
-import { stringToHex, stringToU8a, numberToHex } from '@polkadot/util'
+import {
+  stringToHex, stringToU8a, numberToHex, isHex
+} from '@polkadot/util'
 import { didToHex, NonceManager, getIPAdress } from 'libs/util'
 import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
@@ -171,7 +173,7 @@ export default async function prochainWsServer(api, socket) {
       let { pubkey, address, didType, superior, socialAccount, socialSuperior } = JSON.parse(msg)
       const nonce = await nonceManager.getNonce(signer.address)
 
-      superior = superior && didToHex(superior)
+      superior = isHex(superior) ?  superior : didToHex(superior)
       didType = stringToHex(didType)
       socialAccount = socialAccount && stringToHex(blake2AsHex(socialAccount, 256))
       socialSuperior = socialSuperior && stringToHex(blake2AsHex(socialSuperior, 256))

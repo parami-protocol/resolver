@@ -78,6 +78,7 @@ export async function dirExists(dir, path) {
 }
 
 export function didToHex(did) {
+  if (!did) return ''
   const bytes = bs58.decode(did.substring(8))
   return blake2AsHex(bytes, 256)
 }
