@@ -68,19 +68,6 @@
     
             socket.emit('create_by_old', data)
           }, 4500)
-
-          // 抵押pra
-          setTimeout(() => {
-            const amount = 50 * Math.pow(10, 15)
-            const data = JSON.stringify({
-              address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51',
-              method: 'lock',
-              params: [amount, 10]
-            })
-
-            console.log(data, 'lock data')
-            socket.emit('sign', data)
-          }, 9000)
         })
         
         $('.create-old').click(function() {
