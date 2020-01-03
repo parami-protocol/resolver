@@ -59,8 +59,7 @@ const handleResult = (events, status, socket, payload) => {
     socket.emit(
       'tx_failed',
       JSON.stringify({
-        msg: 'sign error, please try again',
-        payload
+        msg: payload
       })
     )
   }
