@@ -75,7 +75,7 @@ const handleInternalError = (error, address, nonceManager) => {
 
 const getSigner = () => new Promise((resolve, reject) => {
   fs.readFile(
-    `${homedir}/.substrate/prochain-fund-account`,
+    `${homedir}/.substrate/did:pra:LvVE2k7TDmkqKZZvbt2R7xTJdR3pK3JFMA`,
     async (err, res) => {
       if (err) {
         reject(err)
