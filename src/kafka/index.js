@@ -61,31 +61,34 @@ export default async function kafkaConsumer(api) {
 
     await consumer.run({
       eachMessage: async ({ message }) => {
-        const {
-          id, from_did: fromDid, to_did: toDid, amount, memo
-        } = JSON.parse(message.value.toString())
+        try {
+          const {
+            id, from_did: fromDid, to_did: toDid, amount, memo
+          } = JSON.parse(message.value.toString())
 
-        const res = fs.readFileSync(`${homedir}/.substrate/${fromDid}`)
-        const keyring = new Keyring({ type: 'sr25519' })
-        const seed = res.toString().replace(/[\r\n]/g, '')
-        const pair = keyring.addFromMnemonic(seed)
+          const res = fs.readFileSync(`${homedir}/.substrate/${fromDid}`)
+          const keyring = new Keyring({ type: 'sr25519' })
+          const seed = res.toString().replace(/[\r\n]/g, '')
+          const pair = keyring.addFromMnemonic(seed)
+          const receiver = didToHex(toDid)
+          const nonce = await nonceManager.getNonce(pair.address)
+          console.log(fromDid, amount, nonce, 'did transfer---------')
 
-        const receiver = didToHex(toDid)
-        const nonce = await nonceManager.getNonce(pair.address)
-        console.log(fromDid, amount, nonce, 'did transfer---------')
-
-        // transfer from airdrop account
-        api.tx.did
-          .transfer(receiver, numberToHex(+amount), memo)
-          .signAndSend(pair, { nonce },
-            ({ events = [], status }) => {
-              console.log('Transaction status:', status.type)
-              handleKafkaEvent(events, status, id, producer)
+          // transfer from airdrop account
+          api.tx.did
+            .transfer(receiver, numberToHex(+amount), memo)
+            .signAndSend(pair, { nonce },
+              ({ events = [], status }) => {
+                console.log('Transaction status:', status.type)
+                handleKafkaEvent(events, status, id, producer)
+              })
+            .catch(e => {
+              console.log(e, 'kafka internal error')
+              nonceManager.sub(pair.address)
             })
-          .catch(e => {
-            console.log(e, 'kafka internal error')
-            nonceManager.sub(pair.address)
-          })
+        } catch (error) {
+          console.log(error, 'kafka external error')
+        }
       }
     })
   } catch (error) {
