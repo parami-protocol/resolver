@@ -261,6 +261,6 @@ export class NonceManager {
         address,
         global.nonceMap[address]
       )
-    }, 1000 * 20)
+    }, 1000 * 60)
   }
 }

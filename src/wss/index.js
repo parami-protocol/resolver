@@ -88,8 +88,8 @@ export default async function prochainWsServer(api, socket) {
 
       // social superior
       const hashedSocial = blake2AsHex(socialSuperior, 256)
-      const socialHash = await api.query.did.socialAccount(hash)
-      if (!socialHash.isEmpty) {
+      const didHash = await api.query.did.socialAccount(hash)
+      if (!didHash.isEmpty) {
         socket.emit('Created', {
           status: { exists: true },
           payload
