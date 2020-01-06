@@ -45,40 +45,40 @@
         $('.create-genesis').click(function() {
           console.log('create genesis')          
           // 创世账号
-          const data = JSON.stringify({
+          const data = {
             superior: '',
             address: '5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r',
             pubkey: '0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f',
             didType: '1',
             socialAccount: 'newfeiyang'
-          })
+          }
   
           socket.emit('create_by_old', data)
           
           // 创世群
           setTimeout(() => {
-            const data = JSON.stringify({
+            const data = {
               superior: '',
               address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51', // Airdrop
               pubkey: '0x0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435',
               didType: '1',
               socialAccount: 'wxid_7h9gf2umzeja22', // pratest1111  般若超级节点
               socialSuperior: 'newfeiyang'
-            })
+            }
     
             socket.emit('create_by_old', data)
           }, 4500)
         })
         
         $('.create-old').click(function() {
-          const data = JSON.stringify({
+          const data = {
             superior: '',
             address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51', // Airdrop
             pubkey: '0x0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435',
             didType: '1',
             socialAccount: 'wxid_7h9gf2umzeja22', // pratest1111  般若超级节点
             socialSuperior: 'newfeiyang'
-          })
+          }
           
           console.log('create old', data)
           socket.emit('create_by_old', data)
@@ -86,23 +86,22 @@
 
         $('.create-sns').click(function() {
           console.log('create sns account')
-          const data = JSON.stringify({
-            didType: '1',
-            sid: 'testwsgq',
+  
+          socket.emit('create_by_sns', {
+            type: '1',
+            sid: 'test' + Math.floor(Math.random() * 10000),
             socialSuperior: 'wxid_7h9gf2umzeja22',
           })
-  
-          socket.emit('create_by_sns', data)
         })
 
         $('.lock').click(function() {
           const amount = 50 * Math.pow(10, 15)
-          const data = JSON.stringify({
+          const data = {
             token: 'slsjlsjlsjsljsl',
             address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51',
             method: 'lock',
             params: [amount, 10]
-          })
+          }
 
           console.log(data, 'lock data')
           socket.emit('sign', data)
@@ -111,11 +110,11 @@
         $('.unlock').click(function() {
           const amount = 50 * Math.pow(10, 15)
 
-          const data = JSON.stringify({
+          const data = {
             address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51',
             method: 'unlock',
             params: [amount]
-          })
+          }
 
           console.log(data, 'unlock data')
           socket.emit('sign', data)
@@ -123,11 +122,11 @@
 
         $('.test').click(function() {
           const amount = 0.01 * Math.pow(10, 15)
-          const data = JSON.stringify({
+          const data = {
             id: '123456789',
             did: 'did:pra:LuEBwxYKaTdNYfXYkM7uCumbbaAh6ks4JD',
             amount
-          })
+          }
 
           
           for(let i=0;i < 100;i++) {
@@ -138,14 +137,19 @@
         socket.on('connect', function() {
           console.log('connect successfully')
 
-          socket.on('Created', msg => {
-            console.log(msg, 'create succeed')
-          })
-  
           socket.on('tx_failed', msg => {
             console.log(msg, 'create failed')
           })
   
+        })
+
+        socket.on('Created', async data => {
+          console.log(data, typeof data, '-------created-----')
+          const { status, msg: { sid } } = data
+          if (!status.exists) {
+            console.log('创建账号成功')
+          }
+          console.log('bind sn code result')
         })
   
         socket.on('disconnect', function(){

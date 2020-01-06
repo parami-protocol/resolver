@@ -3,16 +3,15 @@ import os from 'os'
 import { mnemonicGenerate, blake2AsHex } from '@polkadot/util-crypto'
 import Keyring from '@polkadot/keyring'
 import {
-  stringToHex, stringToU8a, numberToHex, isHex
+  stringToHex, stringToU8a, numberToHex, isHex, u8aToHex
 } from '@polkadot/util'
 import { didToHex, NonceManager, getIPAdress } from 'libs/util'
 import { checkAuth } from 'libs/auth'
-import logger from 'libs/log'
 
 const homedir = os.homedir()
 
 const handleResult = (events, status, socket, payload) => {
-  console.log('Transaction status:', status.type)
+  console.log('Transaction status:', status.toString())
   if (status.isFinalized) {
     console.log('Completed at block hash', status.asFinalized.toHex())
     console.log('Events:')
@@ -30,47 +29,31 @@ const handleResult = (events, status, socket, payload) => {
       }
     })
 
+    const { event: { data, method } } = events[events.length - 2]
     if (txStatus) {
-      const {
-        event: { data, method }
-      } = events[events.length - 2]
-      const msg = data.toString()
-
-      socket.emit(method, msg)
-    } else {
-      socket.emit(
-        'tx_failed',
-        JSON.stringify({
-          payload,
-          msg: 'sign error, please check your params'
-        })
-      )
-      logger.error(payload)
-    }
-  } else if (status.exists) {
-    socket.emit(
-      'Created',
-      JSON.stringify({
+      socket.emit(method, {
         status,
+        msg: data.toString(),
         payload
       })
-    )
-  } else if (status.error) {
-    socket.emit(
-      'tx_failed',
-      JSON.stringify({
-        msg: payload
+    } else {
+      socket.emit('tx_failed', {
+        status,
+        msg: 'sign error, please check your params',
+        payload
       })
-    )
+    }
   }
 }
 
-const handleInternalError = (error, address, nonceManager) => {
-  logger.error(error, 'internal error')
-  console.log(error, 'internal error')
+const handleError = (error, socket, nonceManager, address) => {
+  console.log(error)
   if (address) {
     nonceManager.sub(address)
   }
+  socket.emit('tx_failed', {
+    msg: error
+  })
 }
 
 const getSigner = () => new Promise((resolve, reject) => {
@@ -96,9 +79,9 @@ export default async function prochainWsServer(api, socket) {
   // nonce manager
   const nonceManager = new NonceManager(api)
 
-  socket.on('create_by_sns', async msg => {
+  socket.on('create_by_sns', async payload => {
     try {
-      const { sid, type, socialSuperior } = JSON.parse(msg)
+      const { sid, type, socialSuperior } = payload
       // social accounnt
       const hashedSid = blake2AsHex(sid, 256)
       const hash = blake2AsHex(stringToU8a(`${hashedSid}1`), 256)
@@ -107,7 +90,10 @@ export default async function prochainWsServer(api, socket) {
       const hashedSocial = blake2AsHex(socialSuperior, 256)
       const socialHash = await api.query.did.socialAccount(hash)
       if (!socialHash.isEmpty) {
-        handleResult([], { exists: true }, socket, msg)
+        socket.emit('Created', {
+          status: { exists: true },
+          payload
+        })
         return console.log('账号已存在')
       }
 
@@ -129,16 +115,20 @@ export default async function prochainWsServer(api, socket) {
       })
 
       const nonce = await nonceManager.getNonce(signer.address)
+      const pubkey = u8aToHex(publicKey)
       const didType = stringToHex(type)
       const socialAccount = stringToHex(hashedSid)
       const superior = stringToHex(hashedSocial)
       api.tx.did
-        .create(publicKey, address, didType, '', socialAccount, superior)
+        .create(pubkey, address, didType, '', socialAccount, superior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, msg)
+            handleResult(events, status, socket, payload)
           })
-        .catch(e => handleInternalError(e, signer.address, nonceManager))
+        .catch(e => {
+          console.log(e, 'internal error')
+          handleError('交易未完成，请重试', socket, nonceManager, signer.address)
+        })
 
       fs.writeFile(
         `${homedir}/.substrate/wallet/key_stores/${address}.json`,
@@ -161,15 +151,16 @@ export default async function prochainWsServer(api, socket) {
       )
     } catch (error) {
       console.log(error, 'create by sns error')
-      handleResult({}, { error: true }, socket, msg)
+      handleError('创建DID失败，请重试', socket)
     }
+
     return true
   })
 
-  socket.on('create_by_old', async msg => {
+  socket.on('create_by_old', async payload => {
     try {
       /* eslint-disable */
-      let { pubkey, address, didType, superior, socialAccount, socialSuperior } = JSON.parse(msg)
+      let { pubkey, address, didType, superior, socialAccount, socialSuperior } = payload
       const nonce = await nonceManager.getNonce(signer.address)
 
       superior = isHex(superior) ?  superior : didToHex(superior)
@@ -181,27 +172,28 @@ export default async function prochainWsServer(api, socket) {
         .create(pubkey, address, didType, superior, socialAccount, socialSuperior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, msg)
+            handleResult(events, status, socket, payload)
           })
-        .catch(e => handleInternalError(e, signer.address, nonceManager))
+        .catch(e => {
+          console.log(e, 'internal error')
+          handleError('交易未完成，请重试', socket, nonceManager, signer.address)
+        })
     } catch (error) {
-      console.log(error, 'create_by_old error')
-      handleResult({}, { error: true }, socket, msg)
+      console.log(error, 'create by old error')
+      handleError("创建DID失败，请重试", socket)
     }
   })
 
-  socket.on('sign', async msg => {
+  socket.on('sign', async payload => {
     try {
-      const { address, method, params, token } = JSON.parse(msg)
+      const { address, method, params, token } = payload
 
       // auth check
       const ipAdd = getIPAdress()
-      if (ipAdd !== '172.21.0.3') {
+      if (ipAdd !== '172.21.0.3' && process.env.NODE_ENV !== 'development') {
         const rs = await checkAuth(token)
         if (!rs.success) {
-          console.log(rs.message)
-          handleResult({}, { error: true }, socket, rs.message)
-          return false
+          return handleError(rs.message, socket)
         }
       }
 
@@ -225,13 +217,17 @@ export default async function prochainWsServer(api, socket) {
       api.tx.did[method](...params)
         .signAndSend(pair, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, msg)
+            handleResult(events, status, socket, payload)
           }
         )
-        .catch(handleInternalError)
+        .catch(e => {
+          console.log(e, 'internal error')
+          handleError('交易未完成，请重试', socket)
+        })
+
     } catch (error) {
       console.log(error, 'sign error-----')
-      handleResult({}, { error: true }, socket, msg)
+      handleError("签名失败，请重试", socket)
     }
   })
 }

@@ -45,12 +45,9 @@ const entry = async () => {
           const curSocketId = global.hashName[name]
           const toSocket = io.sockets.connected[curSocketId]
           if (toSocket) {
-            toSocket.emit(
-              'balance_change',
-              JSON.stringify({
-                balance: current.toString() / 10 ** 15
-              })
-            )
+            toSocket.emit('balance_change', {
+              balance: current.toString() / 10 ** 15
+            })
           }
         })
       }
