@@ -1,5 +1,4 @@
 import { blake2AsHex } from '@polkadot/util-crypto'
-import { stringToU8a } from '@polkadot/util'
 import { hexToDid } from 'libs/util'
 
 export default async (req, res, api) => {
@@ -7,11 +6,11 @@ export default async (req, res, api) => {
 
   let didHash
   if (type === 'wxid') {
-    const wxHash = blake2AsHex(stringToU8a(identifier), 256)
-    const hash = blake2AsHex(stringToU8a(`${wxHash}1`), 256)
+    const wxHash = blake2AsHex(identifier, 256)
+    const hash = blake2AsHex(`${wxHash}1`, 256)
     didHash = await api.query.did.socialAccount(hash)
   } else {
-    const hash = blake2AsHex(stringToU8a(identifier), 256)
+    const hash = blake2AsHex(identifier, 256)
     didHash = await api.query.did.didIndices(hash)
   }
 

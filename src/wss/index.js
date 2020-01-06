@@ -3,7 +3,7 @@ import os from 'os'
 import { mnemonicGenerate, blake2AsHex } from '@polkadot/util-crypto'
 import Keyring from '@polkadot/keyring'
 import {
-  stringToHex, stringToU8a, numberToHex, isHex, u8aToHex
+  stringToHex, numberToHex, isHex, u8aToHex
 } from '@polkadot/util'
 import { didToHex, NonceManager, getIPAdress } from 'libs/util'
 import { checkAuth } from 'libs/auth'
@@ -84,11 +84,11 @@ export default async function prochainWsServer(api, socket) {
       const { sid, type, socialSuperior } = payload
       // social accounnt
       const hashedSid = blake2AsHex(sid, 256)
-      const hash = blake2AsHex(stringToU8a(`${hashedSid}1`), 256)
+      const hashedSid2 = blake2AsHex(`${hashedSid}1`, 256)
 
       // social superior
       const hashedSocial = blake2AsHex(socialSuperior, 256)
-      const didHash = await api.query.did.socialAccount(hash)
+      const didHash = await api.query.did.socialAccount(hashedSid2)
       if (!didHash.isEmpty) {
         socket.emit('Created', {
           status: { exists: true },
