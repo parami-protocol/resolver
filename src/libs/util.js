@@ -2,7 +2,9 @@ import fs from 'fs'
 import os from 'os'
 import bs58 from 'bs58'
 import { blake2AsHex } from '@polkadot/util-crypto'
-import { hexToString, isHex } from '@polkadot/util'
+import {
+  hexToString, isHex, hexAddPrefix, hexStripPrefix
+} from '@polkadot/util'
 import crypto from 'crypto'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import types from 'libs/types'
@@ -84,7 +86,7 @@ export function didToHex(did) {
 }
 
 export function hexToDid(hex) {
-  const bytes = Buffer.from(hex.slice(2), 'hex')
+  const bytes = Buffer.from(hexStripPrefix(hex), 'hex')
   const address = bs58.encode(bytes)
   if (address) {
     return `did:pra:${address}`
@@ -156,9 +158,7 @@ export function metadataFormat(metadata) {
           eos = hexToString(eos)
           btc = hexToString(btc)
           eth = hexToString(eth)
-          if (eth) {
-            eth = '0x' + eth
-          }
+          if (eth) eth = hexAddPrefix(eth)
           metadata[key] = { btc, eth, eos }
           break
         }
