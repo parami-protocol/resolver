@@ -9,9 +9,11 @@ export default async (req, res, api) => {
     const wxHash = blake2AsHex(identifier, 256)
     const hash = blake2AsHex(`${wxHash}1`, 256)
     didHash = await api.query.did.socialAccount(hash)
-  } else {
+  } else if (type === 'index') {
     const hash = blake2AsHex(identifier, 256)
     didHash = await api.query.did.didIndices(hash)
+  } else { // did hash
+    didHash = identifier
   }
 
   const metadata = await api.query.did.metadata(didHash)
