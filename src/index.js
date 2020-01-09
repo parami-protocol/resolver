@@ -90,7 +90,7 @@ const entry = async () => {
     })
   )
 
-  app.use('/api', router({ config, api }))
+  app.use('/api/v1', router({ config, api }))
 
   app.get('/', (req, res) => {
     res.sendFile(`${process.cwd()}/public/index.html`)

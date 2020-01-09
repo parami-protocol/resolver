@@ -1,8 +1,8 @@
 import multipart from 'connect-multiparty'
 import { Router } from 'express'
 
-import didController from '../controller/did'
-import convertionController from '../controller/convertion'
+import ConvertionController from '../controller/convertion'
+import MetadataController from '../controller/metadata'
 
 export default ({ config, api }) => {
   console.log(config)
@@ -10,13 +10,9 @@ export default ({ config, api }) => {
 
   const multipartMiddleware = multipart()
 
-  router.get('/did/:did', (req, res) => {
-    didController(req, res, api)
-  })
+  router.get('/did/:did', (req, res) => MetadataController(req, res, api))
 
-  router.get('/convertion', async (req, res) => {
-    convertionController(req, res, api)
-  })
+  router.get('/convert', async (req, res) => ConvertionController(req, res, api))
 
   router.post('/test', multipartMiddleware, (req, res) => {
     res.json({
