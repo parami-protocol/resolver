@@ -165,8 +165,8 @@ export default async function prochainWsServer(api, socket) {
 
       superior = isHex(superior) ?  superior : didToHex(superior)
       didType = stringToHex(didType)
-      socialAccount = socialAccount && stringToHex(blake2AsHex(socialAccount, 256))
-      socialSuperior = socialSuperior && stringToHex(blake2AsHex(socialSuperior, 256))
+      socialAccount = socialAccount ? stringToHex(blake2AsHex(socialAccount, 256)) : null
+      socialSuperior = socialSuperior ? stringToHex(blake2AsHex(socialSuperior, 256)) : null
 
       api.tx.did
         .create(pubkey, address, didType, superior, socialAccount, socialSuperior)
