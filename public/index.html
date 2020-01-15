@@ -26,11 +26,7 @@
   </head>
   <body>
     <div class="container">
-      <button class="create-genesis">初始化</button>
-      <span>
-        创建创世账号，创建初始群主DID，抵押PRA
-      </span>
-      <br>
+      <button class="create-genesis">创世账号</button>
       <button class="create-old">老账号</button>
       <button class="create-sns">社交账号</button>
       <button class="lock">抵押</button>
@@ -54,20 +50,6 @@
           }
   
           socket.emit('create_by_old', data)
-          
-          // 创世群
-          setTimeout(() => {
-            const data = {
-              superior: '',
-              address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51', // Airdrop
-              pubkey: '0x0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435',
-              didType: '1',
-              socialAccount: 'wxid_7h9gf2umzeja22', // pratest1111  般若超级节点
-              socialSuperior: 'newfeiyang'
-            }
-    
-            socket.emit('create_by_old', data)
-          }, 4500)
         })
         
         $('.create-old').click(function() {
@@ -122,17 +104,16 @@
         })
 
         $('.test').click(function() {
-          const amount = 0.01 * Math.pow(10, 15)
           const data = {
-            id: '123456789',
-            did: 'did:pra:LuEBwxYKaTdNYfXYkM7uCumbbaAh6ks4JD',
-            amount
+              "superior": "0x4f148872c125023a1bfe48f47117831fede7b2d59c341b39040b92ae3e024707",
+              "address": "5Ceuib6t81VURBhkejHUTADsbrTqyfqvtqeqhjczTDKR2hJY",
+              "pubkey": "0x1a1645384690e4540cdf55944518a6a6996b5559a63c80d6b4e0657a94e5bd6b",
+              "didType": "1",
+              "socialAccount": "hehe010138"
           }
-
           
-          for(let i=0;i < 100;i++) {
-            socket.emit('kt', data)
-          }
+          console.log('test--', data)
+          socket.emit('create_by_old', data)
         })
 
         socket.on('connect', function() {

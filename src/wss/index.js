@@ -167,7 +167,7 @@ export default async function prochainWsServer(api, socket) {
       didType = stringToHex(didType)
       socialAccount = socialAccount ? stringToHex(blake2AsHex(socialAccount, 256)) : null
       socialSuperior = socialSuperior ? stringToHex(blake2AsHex(socialSuperior, 256)) : null
-
+      console.log(pubkey, address, didType, superior, socialAccount, socialSuperior, 'input data----')
       api.tx.did
         .create(pubkey, address, didType, superior, socialAccount, socialSuperior)
         .signAndSend(signer, { nonce },
