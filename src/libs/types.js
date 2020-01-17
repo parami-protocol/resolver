@@ -46,8 +46,6 @@ const types = {
     expire_height: 'u32',
     random_number_hash: 'Vec<u8>',
     swap_id: 'Hash',
-    event_timestamp: 'u64',
-    htlc_timestamp: 'u64',
     sender_addr: 'Vec<u8>',
     sender_chain_type: 'HTLCChain',
     receiver_addr: 'AccountId',
@@ -63,7 +61,8 @@ const types = {
   },
   EventLogSource: {
     event_name: 'Vec<u8>',
-    event_url: 'Vec<u8>'
+    event_url: 'Vec<u8>',
+    event_data: 'Vec<u8>'
   }
 }
 
