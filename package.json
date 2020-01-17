@@ -50,10 +50,10 @@
     "boilerplate"
   ],
   "dependencies": {
-    "@polkadot/api": "^0.100.0-beta.14",
-    "@polkadot/keyring": "^1.7.1",
-    "@polkadot/util": "^1.7.1",
-    "@polkadot/util-crypto": "^1.7.1",
+    "@polkadot/api": "^1.0.0-beta.8",
+    "@polkadot/keyring": "^2.0.0-beta.4",
+    "@polkadot/util": "^2.0.0-beta.4",
+    "@polkadot/util-crypto": "^2.0.0-beta.4",
     "body-parser": "^1.19.0",
     "bs58": "^4.0.1",
     "connect-multiparty": "^2.2.0",
