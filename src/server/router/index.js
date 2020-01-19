@@ -3,6 +3,7 @@ import { Router } from 'express'
 
 import ConvertionController from '../controller/convertion'
 import MetadataController from '../controller/metadata'
+import RandomController from '../controller/randomNumber'
 
 export default ({ config, api }) => {
   console.log(config)
@@ -13,6 +14,8 @@ export default ({ config, api }) => {
   router.get('/did/:did', (req, res) => MetadataController(req, res, api))
 
   router.get('/convert', async (req, res) => ConvertionController(req, res, api))
+
+  router.get('/random_number_hash', RandomController)
 
   router.post('/test', multipartMiddleware, (req, res) => {
     res.json({
