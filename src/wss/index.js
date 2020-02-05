@@ -82,6 +82,7 @@ export default async function prochainWsServer(api, socket) {
   socket.on('create_by_sns', async payload => {
     try {
       const { sid, type, socialSuperior } = payload
+	  console.log(sid, type, socialSuperior, 'params')
       // social accounnt
       const hashedSid = blake2AsHex(sid, 256)
       const hashedSid2 = blake2AsHex(`${hashedSid}1`, 256)
