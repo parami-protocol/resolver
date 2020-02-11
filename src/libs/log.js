@@ -2,18 +2,17 @@ const log4js = require('log4js')
 
 log4js.configure({
   appenders: {
-    file: {
-      type: 'file',
-      filename: './logs/error.log',
-      layout: {
-        type: 'pattern',
-        pattern: '%d{MM/dd-hh:mm.ss.SSS} %p - %m'
-      }
+	out: { type: 'console' },
+    log_file: {
+      type: 'dateFile',
+      filename: './logs/log_file',
+      pattern: "yyyy-MM-dd.log",
+      alwaysIncludePattern: true,
     }
   },
   categories: {
     default: {
-      appenders: ['file'],
+      appenders: ['out', 'log_file'],
       level: 'debug'
     }
   }

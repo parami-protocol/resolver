@@ -7,18 +7,19 @@ import {
 } from '@polkadot/util'
 import { didToHex, NonceManager, getIPAdress } from 'libs/util'
 import { checkAuth } from 'libs/auth'
+import logger from 'libs/log'
 
 const homedir = os.homedir()
 
 const handleResult = (events, status, socket, payload) => {
-  console.log('Transaction status:', status.toString())
+  logger.info('Transaction status:', status.toString())
   if (status.isFinalized) {
-    console.log('Completed at block hash', status.asFinalized.toHex())
-    console.log('Events:')
+    logger.info('Completed at block hash', status.asFinalized.toHex())
+    logger.info('Events:')
 
     let txStatus = true
     events.forEach(({ phase, event: { data, section, method } }) => {
-      console.log(
+      logger.info(
         '\t',
         phase.toString(),
         `: ${section}.${method}`,
@@ -47,7 +48,7 @@ const handleResult = (events, status, socket, payload) => {
 }
 
 const handleError = (error, socket, nonceManager, address) => {
-  console.log(error)
+  logger.error(error)
   if (address) {
     nonceManager.sub(address)
   }
@@ -82,7 +83,7 @@ export default async function prochainWsServer(api, socket) {
   socket.on('create_by_sns', async payload => {
     try {
       const { sid, type, socialSuperior } = payload
-	  console.log(sid, type, socialSuperior, 'params')
+	  logger.info(sid, type, socialSuperior, 'params')
       // social accounnt
       const hashedSid = blake2AsHex(sid, 256)
       const hashedSid2 = blake2AsHex(`${hashedSid}1`, 256)
@@ -95,7 +96,7 @@ export default async function prochainWsServer(api, socket) {
           status: { exists: true },
           payload
         })
-        return console.log('账号已存在')
+        return logger.info('账号已存在')
       }
 
       const mnemonicPhrase = mnemonicGenerate()
@@ -127,7 +128,7 @@ export default async function prochainWsServer(api, socket) {
             handleResult(events, status, socket, payload)
           })
         .catch(e => {
-          console.log(e, 'internal error')
+          logger.error(e, 'internal error')
           handleError('交易未完成，请重试', socket, nonceManager, signer.address)
         })
 
@@ -135,8 +136,8 @@ export default async function prochainWsServer(api, socket) {
         `${homedir}/.substrate/wallet/key_stores/${address}.json`,
         pairKeystore,
         err => {
-          if (err) return console.log(err)
-          console.log('create key pair successfully')
+          if (err) return logger.error(err)
+          logger.info('create key pair successfully')
           return true
         }
       )
@@ -145,13 +146,13 @@ export default async function prochainWsServer(api, socket) {
         `${homedir}/.substrate/wallet/keys/${address}.json`,
         pairSeed,
         err => {
-          if (err) return console.log(err)
-          console.log('save pair seed successfully')
+          if (err) return logger.error(err)
+          logger.info('save pair seed successfully')
           return true
         }
       )
     } catch (error) {
-      console.log(error, 'create by sns error')
+      logger.error(error, 'create by sns error')
       handleError('创建DID失败，请重试', socket)
     }
 
@@ -168,7 +169,7 @@ export default async function prochainWsServer(api, socket) {
       didType = stringToHex(didType)
       socialAccount = socialAccount ? stringToHex(blake2AsHex(socialAccount, 256)) : null
       socialSuperior = socialSuperior ? stringToHex(blake2AsHex(socialSuperior, 256)) : null
-      console.log(pubkey, address, didType, superior, socialAccount, socialSuperior, 'input data----')
+      logger.info(pubkey, address, didType, superior, socialAccount, socialSuperior, 'input data----')
       api.tx.did
         .create(pubkey, address, didType, superior, socialAccount, socialSuperior)
         .signAndSend(signer, { nonce },
@@ -176,11 +177,11 @@ export default async function prochainWsServer(api, socket) {
             handleResult(events, status, socket, payload)
           })
         .catch(e => {
-          console.log(e, 'internal error')
+          logger.error(e, 'internal error')
           handleError('交易未完成，请重试', socket, nonceManager, signer.address)
         })
     } catch (error) {
-      console.log(error, 'create by old error')
+      logger.error(error, 'create by old error')
       handleError("创建DID失败，请重试", socket)
     }
   })
@@ -214,7 +215,7 @@ export default async function prochainWsServer(api, socket) {
         }
       }
 
-      console.log(address, method, params, 'sign')
+      logger.info(address, method, params, 'sign params')
       api.tx.did[method](...params)
         .signAndSend(pair, { nonce },
           ({ events = [], status }) => {
@@ -222,12 +223,12 @@ export default async function prochainWsServer(api, socket) {
           }
         )
         .catch(e => {
-          console.log(e, 'internal error')
+          logger.error(e, 'internal error')
           handleError('交易未完成，请重试', socket)
         })
 
     } catch (error) {
-      console.log(error, 'sign error-----')
+      logger.error(error, 'sign error-----')
       handleError("签名失败，请重试", socket)
     }
   })
