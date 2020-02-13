@@ -4,12 +4,13 @@ import { Kafka } from 'kafkajs'
 import Keyring from '@polkadot/keyring'
 import { numberToHex } from '@polkadot/util'
 import { didToHex, NonceManager } from 'libs/util'
+import logger from 'libs/log'
 
 const handleKafkaEvent = (events, status, id, producer) => {
   if (status.isFinalized) {
     const hash = status.asFinalized.toHex()
-    console.log('Completed at block hash', hash)
-    console.log('Events:')
+    logger.info('Completed at block hash', hash)
+    logger.info('Events:')
 
     let isSuccessful = true
     events.forEach(({ phase, event: { data, method, section } }) => {
@@ -72,26 +73,26 @@ export default async function kafkaConsumer(api) {
           const pair = keyring.addFromMnemonic(seed)
           const receiver = didToHex(toDid)
           const nonce = await nonceManager.getNonce(pair.address)
-          console.log(fromDid, amount, nonce, 'did transfer---------')
+          logger.info(fromDid, toDid, amount, nonce, 'kafka transfer')
 
           // transfer from airdrop account
           api.tx.did
             .transfer(receiver, numberToHex(+amount), memo)
             .signAndSend(pair, { nonce },
               ({ events = [], status }) => {
-                console.log('Transaction status:', status.type)
+                logger.info('Transaction status:', status.type)
                 handleKafkaEvent(events, status, id, producer)
               })
             .catch(e => {
-              console.log(e, 'kafka internal error')
+              logger.error(e, 'kafka internal error')
               nonceManager.sub(pair.address)
             })
         } catch (error) {
-          console.log(error, 'kafka external error')
+          logger.error(error, 'kafka external error')
         }
       }
     })
   } catch (error) {
-    console.log(error, 'kafka error')
+    logger.error(error, 'kafka error')
   }
 }
