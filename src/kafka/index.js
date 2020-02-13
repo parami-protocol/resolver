@@ -14,7 +14,7 @@ const handleKafkaEvent = (events, status, id, producer) => {
 
     let isSuccessful = true
     events.forEach(({ phase, event: { data, method, section } }) => {
-      console.log(
+      logger.info(
         '\t',
         phase.toString(),
         `: ${section}.${method}`,
