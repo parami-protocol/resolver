@@ -246,7 +246,7 @@ export class NonceManager {
   }
 
   sub(address) {
-    global.nonceMap[address] = global.nonceMap[address] -= 1
+    global.nonceMap[address] = global.nonceMap[address] - 1
     return global.nonceMap[address]
   }
 
@@ -256,11 +256,6 @@ export class NonceManager {
     this.timerMap[address] = setInterval(async () => {
       const nonce = await this.api.query.system.accountNonce(address)
       global.nonceMap[address] = nonce - 1
-      console.log(
-        'new nonce for address:',
-        address,
-        global.nonceMap[address]
-      )
-    }, 1000 * 60)
+    }, 1000 * 9)
   }
 }

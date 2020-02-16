@@ -47,13 +47,13 @@ const handleResult = (events, status, socket, payload) => {
   }
 }
 
-const handleError = (error, socket, nonceManager, address) => {
-  logger.error(error)
+const handleError = (error, msg, socket, nonceManager, address) => {
+  logger.error(error, msg)
   if (address) {
     nonceManager.sub(address)
   }
   socket.emit('tx_failed', {
-    msg: error
+    msg
   })
 }
 
@@ -127,9 +127,8 @@ export default async function prochainWsServer(api, socket) {
           ({ events = [], status }) => {
             handleResult(events, status, socket, payload)
           })
-        .catch(e => {
-          logger.error(e, 'internal error')
-          handleError('交易未完成，请重试', socket, nonceManager, signer.address)
+        .catch(error => {
+          handleError(error, 'internal error', socket, nonceManager, signer.address)
         })
 
       fs.writeFile(
@@ -152,11 +151,9 @@ export default async function prochainWsServer(api, socket) {
         }
       )
     } catch (error) {
-      logger.error(error, 'create by sns error')
-      handleError('创建DID失败，请重试', socket)
+      handleError(error, '创建DID失败，请重试', socket)
     }
 
-    return true
   })
 
   socket.on('create_by_old', async payload => {
@@ -176,13 +173,11 @@ export default async function prochainWsServer(api, socket) {
           ({ events = [], status }) => {
             handleResult(events, status, socket, payload)
           })
-        .catch(e => {
-          logger.error(e, 'internal error')
-          handleError('交易未完成，请重试', socket, nonceManager, signer.address)
+        .catch(error => {
+          handleError(error, 'internal error', socket, nonceManager, signer.address)
         })
     } catch (error) {
-      logger.error(error, 'create by old error')
-      handleError("创建DID失败，请重试", socket)
+      handleError(error, "创建DID失败，请重试", socket)
     }
   })
 
@@ -215,7 +210,7 @@ export default async function prochainWsServer(api, socket) {
         }
       }
 
-      logger.info(address, method, params, 'sign params')
+      logger.info(address, method, params, nonce, 'sign params')
       api.tx.did[method](...params)
         .signAndSend(pair, { nonce },
           ({ events = [], status }) => {
@@ -223,13 +218,11 @@ export default async function prochainWsServer(api, socket) {
           }
         )
         .catch(e => {
-          logger.error(e, 'internal error')
-          handleError('交易未完成，请重试', socket)
+          handleError(error, 'internal error', socket)
         })
 
     } catch (error) {
-      logger.error(error, 'sign error-----')
-      handleError("签名失败，请重试", socket)
+      handleError(error, "签名失败，请重试", socket)
     }
   })
 }
