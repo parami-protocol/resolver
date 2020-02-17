@@ -210,7 +210,7 @@ export default async function prochainWsServer(api, socket) {
         }
       }
 
-      logger.info(address, method, params, nonce, 'sign params')
+      logger.info(address, method, params, nonce - 0, 'sign params')
       api.tx.did[method](...params)
         .signAndSend(pair, { nonce },
           ({ events = [], status }) => {
