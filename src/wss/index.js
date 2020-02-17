@@ -59,7 +59,7 @@ const handleError = (error, msg, socket, nonceManager, address) => {
 
 const getSigner = () => new Promise((resolve, reject) => {
   fs.readFile(
-    `${homedir}/.substrate/did:pra:LvVE2k7TDmkqKZZvbt2R7xTJdR3pK3JFMA`,
+    `${homedir}/.substrate/5EhdfzDGWguro2dxQcQs9Wssvhpq4JSA3HsuGMvDPgHSYwqV`,
     async (err, res) => {
       if (err) {
         reject(err)
@@ -83,7 +83,7 @@ export default async function prochainWsServer(api, socket) {
   socket.on('create_by_sns', async payload => {
     try {
       const { sid, type, socialSuperior } = payload
-	  logger.info(sid, type, socialSuperior, 'params')
+	  logger.info(sid, type, socialSuperior, 'sns params')
       // social accounnt
       const hashedSid = blake2AsHex(sid, 256)
       const hashedSid2 = blake2AsHex(`${hashedSid}1`, 256)
