@@ -96,6 +96,10 @@ const entry = async () => {
     res.sendFile(`${process.cwd()}/public/index.html`)
   })
 
+  app.get('/reg', (req, res) => {
+    res.sendFile(`${process.cwd()}/public/reg.html`)
+  })
+
   server.listen(process.env.PORT, () => {
     console.log(`listening on *:${process.env.PORT}`)
   })
