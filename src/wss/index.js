@@ -83,7 +83,7 @@ export default async function prochainWsServer(api, socket) {
   socket.on('create_by_sns', async payload => {
     try {
       const { sid, type, socialSuperior } = payload
-	  logger.info(sid, type, socialSuperior, 'sns params')
+      logger.info(sid, type, socialSuperior, 'sns params')
       // social accounnt
       const hashedSid = blake2AsHex(sid, 256)
       const hashedSid2 = blake2AsHex(`${hashedSid}1`, 256)
@@ -153,7 +153,7 @@ export default async function prochainWsServer(api, socket) {
     } catch (error) {
       handleError(error, '创建DID失败，请重试', socket)
     }
-
+    return null
   })
 
   socket.on('create_by_old', async payload => {
@@ -179,6 +179,7 @@ export default async function prochainWsServer(api, socket) {
     } catch (error) {
       handleError(error, "创建DID失败，请重试", socket)
     }
+	return null
   })
 
   socket.on('sign', async payload => {
@@ -217,12 +218,13 @@ export default async function prochainWsServer(api, socket) {
             handleResult(events, status, socket, payload)
           }
         )
-        .catch(e => {
+        .catch(error => {
           handleError(error, 'internal error', socket)
         })
 
     } catch (error) {
       handleError(error, "签名失败，请重试", socket)
     }
+	return null
   })
 }

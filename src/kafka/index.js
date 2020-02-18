@@ -7,6 +7,7 @@ import { didToHex, NonceManager } from 'libs/util'
 import logger from 'libs/log'
 
 const handleKafkaEvent = (events, status, id, producer) => {
+  logger.info('Transaction status:', status.type)
   if (status.isFinalized) {
     const hash = status.asFinalized.toHex()
     logger.info('Completed at block hash', hash)
@@ -80,7 +81,6 @@ export default async function kafkaConsumer(api) {
             .transfer(receiver, numberToHex(+amount), memo)
             .signAndSend(pair, { nonce },
               ({ events = [], status }) => {
-                logger.info('Transaction status:', status.type)
                 handleKafkaEvent(events, status, id, producer)
               })
             .catch(e => {
