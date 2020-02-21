@@ -26,7 +26,7 @@ export default async function prochainEvents(api, io) {
               const socketId = hashName[superiorDid]
               const toSocket = io.sockets.connected[socketId]
               if (toSocket) {
-                toSocket.emit(method, {
+                toSocket.emit('SubCreated', {
                   status: phase.toString(),
                   msg: JSON.stringify([did, superiorDid])
                 })
