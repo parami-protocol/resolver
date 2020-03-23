@@ -8,12 +8,11 @@ export default async (req, res, api) => {
     const result = metadataFormat(metadata.toJSON())
 
     // free balance
-    const balances = await api.query.balances.freeBalance(metadata.address)
-    result.free_balance = balances.toString() / 10 ** 15
+    const { data: balances } = await api.query.system.account(metadata.address)
+    result.free_balance = balances.free.toString() / 10 ** 15
 
     // reserved balance
-    const revBalance = await api.query.balances.reservedBalance(metadata.address)
-    result.reserved_balance = revBalance.toString() / 10 ** 15
+    result.reserved_balance = balances.reserved.toString() / 10 ** 15
 
     res.json({
       result: true,
