@@ -37,7 +37,7 @@ const entry = async () => {
 
       if (!balancesListeners.includes(address)) {
         balancesListeners.push(address)
-        api.query.balances.freeBalance(address, current => {
+        api.query.system.account(address, ({ data: { free: current } }) => {
           console.log(
             current.toString(),
             'balance change---------------------'
