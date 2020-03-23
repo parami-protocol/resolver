@@ -51,6 +51,7 @@
   ],
   "dependencies": {
     "@polkadot/api": "^1.8.0-beta.1",
+    "@polkadot/keyring": "^2.7.0-beta.5",
     "@polkadot/util": "^2.7.0-beta.5",
     "@polkadot/util-crypto": "^2.7.0-beta.5",
     "body-parser": "^1.19.0",
