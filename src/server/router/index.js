@@ -11,6 +11,15 @@ export default ({ config, api }) => {
 
   const multipartMiddleware = multipart()
 
+  router.get('/getStatus', (req, res) => {
+    console.log('get status')
+    res.json({
+      code: 200,
+      msg: 'success',
+      data: null
+    })
+  })
+
   router.get('/did/:did', (req, res) => MetadataController(req, res, api))
 
   router.get('/convert', async (req, res) => ConvertionController(req, res, api))
