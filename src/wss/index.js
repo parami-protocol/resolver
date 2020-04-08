@@ -8,6 +8,7 @@ import {
 import { didToHex, NonceManager, getIPAdress } from 'libs/util'
 import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
+import errors from 'libs/errors'
 
 const homedir = os.homedir()
 const handleResult = (events, status, socket, payload, api) => {
@@ -30,8 +31,8 @@ const handleResult = (events, status, socket, payload, api) => {
         const [metaError] = JSON.parse(dataStr)
         if (metaError.Module) {
           const { index, error } = metaError.Module
-          const { documentation: [detail] } = api.findError(new Uint8Array([index, error]))
-          errorMsg = detail
+          const { name } = api.findError(new Uint8Array([index, error]))
+          errorMsg = errors[name]
         }
         txStatus = false
       }
