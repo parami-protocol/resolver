@@ -10,22 +10,27 @@ import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
 
 const homedir = os.homedir()
-
-const handleResult = (events, status, socket, payload) => {
+const handleResult = (events, status, socket, payload, api) => {
   logger.info('Transaction status:', status.toString())
   if (status.isFinalized) {
     logger.info('Completed at block hash', status.asFinalized.toHex())
     logger.info('Events:')
 
     let txStatus = true
+    let errorMsg = 'sign error, please check your params'
     events.forEach(({ phase, event: { data, section, method } }) => {
+      const dataStr = data.toString()
       logger.info(
         '\t',
         phase.toString(),
         `: ${section}.${method}`,
-        data.toString()
+        dataStr
       )
       if (method.includes('ExtrinsicFailed')) {
+        const [metaError] = JSON.parse(dataStr)
+        const { index, error } = metaError.Module
+        const { documentation: [detail] } = api.findError(new Uint8Array([index, error]))
+        errorMsg = detail
         txStatus = false
       }
     })
@@ -40,7 +45,7 @@ const handleResult = (events, status, socket, payload) => {
     } else {
       socket.emit('tx_failed', {
         status,
-        msg: 'sign error, please check your params',
+        msg: errorMsg,
         payload
       })
     }
@@ -125,7 +130,7 @@ export default async function prochainWsServer(api, socket) {
         .create(pubkey, address, didType, '', socialAccount, superior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, payload)
+            handleResult(events, status, socket, payload, api)
           })
         .catch(error => {
           handleError(error, 'internal error', socket, nonceManager, signer.address)
@@ -171,7 +176,7 @@ export default async function prochainWsServer(api, socket) {
         .create(pubkey, address, didType, superior, socialAccount, socialSuperior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, payload)
+            handleResult(events, status, socket, payload, api)
           })
         .catch(error => {
           handleError(error, 'internal error', socket, nonceManager, signer.address)
@@ -215,7 +220,7 @@ export default async function prochainWsServer(api, socket) {
       api.tx.did[method](...params)
         .signAndSend(pair, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, payload)
+            handleResult(events, status, socket, payload, api)
           }
         )
         .catch(error => {
