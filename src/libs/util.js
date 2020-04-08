@@ -257,7 +257,7 @@ export class NonceManager {
     this.timerMap[address] = setInterval(async () => {
       const { nonce } = await this.api.query.system.account(address)
       global.nonceMap[address] = nonce - 1
-      console.log(global.nonceMap[address], 'current nonce')
+      console.log(global.nonceMap[address], 'current nonce for address: ', address)
     }, 1000 * 3)
   }
 }
