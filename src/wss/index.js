@@ -28,9 +28,11 @@ const handleResult = (events, status, socket, payload, api) => {
       )
       if (method.includes('ExtrinsicFailed')) {
         const [metaError] = JSON.parse(dataStr)
-        const { index, error } = metaError.Module
-        const { documentation: [detail] } = api.findError(new Uint8Array([index, error]))
-        errorMsg = detail
+        if (metaError.Module) {
+          const { index, error } = metaError.Module
+          const { documentation: [detail] } = api.findError(new Uint8Array([index, error]))
+          errorMsg = detail
+        }
         txStatus = false
       }
     })
