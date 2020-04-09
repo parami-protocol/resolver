@@ -1,5 +1,6 @@
 import multipart from 'connect-multiparty'
 import { Router } from 'express'
+import * as WXBizMsgCrypt from 'wxcrypt'
 
 import ConvertionController from '../controller/convertion'
 import MetadataController from '../controller/metadata'
@@ -28,10 +29,12 @@ export default ({ config, api }) => {
 
   router.get('/callback', (req, res) => {
     console.log(req.query, 'callback req msg')
-    res.json({
-      code: 200,
-      message: 'callback get msg'
-    })
+    const {
+      msg_signature: msgSignature, timestamp, nonce, echostr
+    } = req.query
+    const crypto = new WXBizMsgCrypt('qU5i7AKqcK', 'QonojiIYs9LMSlxa2fXvUdFNTDrNLRCsQNA97lPTj2n', 'wwac5056805667fcd9')
+    const result = crypto.verifyURL(msgSignature, timestamp, nonce, echostr)
+    res.send(result)
   })
 
   router.post('/callback', multipartMiddleware, (req, res) => {

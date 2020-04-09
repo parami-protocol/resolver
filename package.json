@@ -65,8 +65,9 @@
     "kafkajs": "^1.11.0",
     "libs": "^0.1.2",
     "log4js": "^6.1.0",
+    "request-promise": "^4.2.5",
     "socket.io": "^2.3.0",
-    "request-promise": "^4.2.5"
+    "wxcrypt": "^1.4.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.7.7",
