@@ -6,10 +6,10 @@ import { numberToHex } from '@polkadot/util'
 import { didToHex, NonceManager } from 'libs/util'
 import { kafkaLogger } from 'libs/log'
 
-const handleKafkaEvent = (events, status, id, producer, address) => {
+const handleKafkaEvent = (events, status, id, producer, address, nonceManager) => {
   kafkaLogger.info('Transaction status:', status.type)
   if (status.type === 'Future') {
-    NonceManager.init(address)
+    nonceManager.init(address)
   }
   if (status.isFinalized) {
     const hash = status.asFinalized.toHex()
@@ -85,7 +85,7 @@ export default async function kafkaConsumer(api) {
             .transfer(receiver, numberToHex(+amount), memo)
             .signAndSend(pair, { nonce },
               ({ events = [], status }) => {
-                handleKafkaEvent(events, status, id, producer, pair.address)
+                handleKafkaEvent(events, status, id, producer, pair.address, nonceManager)
               })
             .catch(e => {
               kafkaLogger.error(e, 'kafka internal error')
