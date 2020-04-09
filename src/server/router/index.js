@@ -1,6 +1,6 @@
 import multipart from 'connect-multiparty'
 import { Router } from 'express'
-import * as WXBizMsgCrypt from 'wxcrypt'
+import WXBizMsgCrypt from 'wxcrypt'
 
 import ConvertionController from '../controller/convertion'
 import MetadataController from '../controller/metadata'
