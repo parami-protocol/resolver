@@ -8,8 +8,9 @@ import { kafkaLogger } from 'libs/log'
 
 const handleKafkaEvent = (events, status, id, producer, address, nonceManager) => {
   kafkaLogger.info('Transaction status:', status.type)
-  if (status.type === 'Future') {
+  if (status.type === 'Future' || status.type === 'Invalid') {
     nonceManager.alter(address)
+    kafkaLogger.info(`reset nonce for address: ${address}`)
   }
   if (status.isFinalized) {
     const hash = status.asFinalized.toHex()

@@ -13,8 +13,11 @@ import errors from 'libs/errors'
 const homedir = os.homedir()
 const handleResult = (events, status, socket, payload, api, nonceManager, address) => {
   logger.info('Transaction status:', status.toString())
-  if (status.type === 'Future' && nonceManager && address) {
-    nonceManager.alter(address)
+  if (status.type === 'Future' || status.type === 'Invalid') {
+    if (nonceManager) {
+      nonceManager.alter(address)
+      logger.info(`reset nonce for address:${address}`)
+    }
   }
   if (status.isFinalized) {
     logger.info('Completed at block hash', status.asFinalized.toHex())
