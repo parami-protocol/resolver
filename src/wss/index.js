@@ -11,8 +11,11 @@ import logger from 'libs/log'
 import errors from 'libs/errors'
 
 const homedir = os.homedir()
-const handleResult = (events, status, socket, payload, api) => {
+const handleResult = (events, status, socket, payload, api, nonceManager, address) => {
   logger.info('Transaction status:', status.toString())
+  if (status.type === 'Future' && nonceManager && address) {
+    nonceManager.alter(address)
+  }
   if (status.isFinalized) {
     logger.info('Completed at block hash', status.asFinalized.toHex())
     logger.info('Events:')
@@ -133,7 +136,7 @@ export default async function prochainWsServer(api, socket) {
         .create(pubkey, address, didType, '', socialAccount, superior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, payload, api)
+            handleResult(events, status, socket, payload, api, nonceManager, signer.address)
           })
         .catch(error => {
           handleError(error, 'internal error', socket, nonceManager, signer.address)
@@ -179,7 +182,7 @@ export default async function prochainWsServer(api, socket) {
         .create(pubkey, address, didType, superior, socialAccount, socialSuperior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, payload, api)
+            handleResult(events, status, socket, payload, api, nonceManager, signer.address)
           })
         .catch(error => {
           handleError(error, 'internal error', socket, nonceManager, signer.address)
