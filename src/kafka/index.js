@@ -9,7 +9,7 @@ import { kafkaLogger } from 'libs/log'
 const handleKafkaEvent = (events, status, id, producer, address, nonceManager) => {
   kafkaLogger.info('Transaction status:', status.type)
   if (status.type === 'Future') {
-    nonceManager.init(address)
+    nonceManager.alter(address)
   }
   if (status.isFinalized) {
     const hash = status.asFinalized.toHex()
@@ -90,7 +90,7 @@ export default async function kafkaConsumer(api) {
             .catch(e => {
               kafkaLogger.error(e, 'kafka internal error')
               // nonceManager.sub(pair.address)
-              nonceManager.init(pair.address)
+              nonceManager.alter(pair.address)
             })
         } catch (error) {
           kafkaLogger.error(error, 'kafka external error')
