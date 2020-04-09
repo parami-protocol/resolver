@@ -4,18 +4,18 @@ import { Kafka } from 'kafkajs'
 import Keyring from '@polkadot/keyring'
 import { numberToHex } from '@polkadot/util'
 import { didToHex, NonceManager } from 'libs/util'
-import logger from 'libs/log'
+import { kafkaLogger } from 'libs/log'
 
 const handleKafkaEvent = (events, status, id, producer) => {
-  logger.info('Transaction status:', status.type)
+  kafkaLogger.info('Transaction status:', status.type)
   if (status.isFinalized) {
     const hash = status.asFinalized.toHex()
-    logger.info('Completed at block hash', hash)
-    logger.info('Events:')
+    kafkaLogger.info('Completed at block hash', hash)
+    kafkaLogger.info('Events:')
 
     let isSuccessful = true
     events.forEach(({ phase, event: { data, method, section } }) => {
-      logger.info(
+      kafkaLogger.info(
         '\t',
         phase.toString(),
         `: ${section}.${method}`,
@@ -25,6 +25,7 @@ const handleKafkaEvent = (events, status, id, producer) => {
     })
 
     const tstatus = isSuccessful ? 1 : 2
+    kafkaLogger.info(id, tstatus, hash)
     producer.send({
       topic: 'topic_testnet_transfer_callback',
       messages: [
@@ -74,7 +75,7 @@ export default async function kafkaConsumer(api) {
           const pair = keyring.addFromMnemonic(seed)
           const receiver = didToHex(toDid)
           const nonce = await nonceManager.getNonce(pair.address)
-          logger.info(fromDid, toDid, amount, nonce, 'kafka transfer')
+          kafkaLogger.info(fromDid, toDid, amount, nonce, 'kafka transfer')
 
           // transfer from airdrop account
           api.tx.did
@@ -84,15 +85,15 @@ export default async function kafkaConsumer(api) {
                 handleKafkaEvent(events, status, id, producer)
               })
             .catch(e => {
-              logger.error(e, 'kafka internal error')
+              kafkaLogger.error(e, 'kafka internal error')
               nonceManager.sub(pair.address)
             })
         } catch (error) {
-          logger.error(error, 'kafka external error')
+          kafkaLogger.error(error, 'kafka external error')
         }
       }
     })
   } catch (error) {
-    logger.error(error, 'kafka error')
+    kafkaLogger.error(error, 'kafka error')
   }
 }

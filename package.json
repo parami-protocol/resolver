@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "start": "NODE_ENV=development nodemon --exec babel-node ./src/index.js",
-    "serve": "nodemon ./dist/index.js",
+    "serve": "node ./dist/index.js",
     "test": "jest",
     "coverage": "npm test -- --coverage",
     "postcoverage": "open-cli coverage/lcov-report/index.html",
