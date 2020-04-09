@@ -5,6 +5,7 @@ dist
 build
 node_modules
 *.log
+logs
 yarn.lock
 .env
 .env.development
