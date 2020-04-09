@@ -220,7 +220,7 @@ export class NonceManager {
     const { nonce } = await this.api.query.system.account(address)
     global.nonceMap[address] = Number(nonce)
 
-    this.update(address)
+    // this.update(address)
 
     return global.nonceMap[address]
   }
