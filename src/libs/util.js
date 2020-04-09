@@ -258,6 +258,6 @@ export class NonceManager {
       const { nonce } = await this.api.query.system.account(address)
       global.nonceMap[address] = nonce - 1
       // console.log(global.nonceMap[address], 'current nonce for address: ', address)
-    }, 1000 * 5)
+    }, 1000 * 9)
   }
 }
