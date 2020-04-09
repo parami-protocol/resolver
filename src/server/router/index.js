@@ -26,10 +26,19 @@ export default ({ config, api }) => {
 
   router.get('/random_number_hash', RandomController)
 
-  router.post('/test', multipartMiddleware, (req, res) => {
+  router.get('/callback', (req, res) => {
+    console.log(req.query, 'callback req msg')
     res.json({
-      success: true,
-      message: 'test success'
+      code: 200,
+      message: 'callback get msg'
+    })
+  })
+
+  router.post('/callback', multipartMiddleware, (req, res) => {
+    console.log(req.body, 'callback body msg')
+    res.json({
+      code: 200,
+      message: 'callback post msg'
     })
   })
 
