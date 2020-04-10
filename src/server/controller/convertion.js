@@ -3,7 +3,6 @@ import { hexToDid } from 'libs/util'
 
 export default async (req, res, api) => {
   const { type, identifier } = req.query
-
   let didHash
   if (type === 'wxid') {
     const wxHash = blake2AsHex(identifier, 256)
@@ -11,7 +10,7 @@ export default async (req, res, api) => {
     didHash = await api.query.did.socialAccount(hash)
   } else if (type === 'index') {
     const hash = blake2AsHex(identifier, 256)
-    didHash = await api.query.did.didIndices(hash)
+    didHash = await api.query.did.userKeys(hash)
   } else { // did hash
     didHash = identifier
   }
