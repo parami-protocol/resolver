@@ -15,8 +15,8 @@ const handleResult = (events, status, socket, payload, api, nonceManager, addres
   logger.info('Transaction status:', status.toString())
   if (status.type === 'Future' || status.type === 'Invalid') {
     if (nonceManager) {
-      nonceManager.alter(address)
-      logger.info(`reset nonce for address:${address}`)
+      const newNonce = nonceManager.sub(address)
+      logger.info(`reset nonce to ${newNonce} for address: ${address}`)
     }
   }
   if (status.isFinalized) {

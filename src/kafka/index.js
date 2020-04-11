@@ -5,12 +5,25 @@ import Keyring from '@polkadot/keyring'
 import { numberToHex } from '@polkadot/util'
 import { didToHex, NonceManager } from 'libs/util'
 import { kafkaLogger } from 'libs/log'
+import Datastore from 'nedb'
 
-const handleKafkaEvent = (events, status, id, producer, address, nonceManager) => {
+const db = new Datastore({ filename: './db/reissue', autoload: true })
+const getRecords = async (id) => new Promise((resolve, reject) => {
+  db.findOne({ id }, (err, docs) => {
+    if (err) {
+      reject(err)
+    } else {
+      resolve(docs)
+    }
+  })
+})
+
+const handleKafkaEvent = (events, status, producer, payload, nonceManager) => {
+  const { id, fromDid, address } = payload
   kafkaLogger.info('Transaction status:', status.type)
   if (status.type === 'Future' || status.type === 'Invalid') {
-    nonceManager.alter(address)
-    kafkaLogger.info(`reset nonce for address: ${address}`)
+    const newNonce = nonceManager.sub(address)
+    kafkaLogger.info(`reset nonce to ${newNonce} for address: ${address}`)
   }
   if (status.isFinalized) {
     const hash = status.asFinalized.toHex()
@@ -30,6 +43,19 @@ const handleKafkaEvent = (events, status, id, producer, address, nonceManager) =
 
     const tstatus = isSuccessful ? 1 : 2
     kafkaLogger.info(id, tstatus, hash)
+
+    // kafka transfer record
+    const transferRecord = {
+      id: `${fromDid}_${id}`,
+      hash
+    }
+
+    db.insert(transferRecord, (err) => {
+      if (err) {
+        kafkaLogger.error('insert transfer record error')
+      }
+    })
+
     producer.send({
       topic: 'topic_testnet_transfer_callback',
       messages: [
@@ -73,6 +99,12 @@ export default async function kafkaConsumer(api) {
             id, from_did: fromDid, to_did: toDid, amount, memo
           } = JSON.parse(message.value.toString())
 
+          const record = await getRecords(`${fromDid}_${id}`)
+          if (record) {
+            kafkaLogger.info('this transaction already sent')
+            return
+          }
+
           const res = fs.readFileSync(`${homedir}/.substrate/${fromDid}`)
           const keyring = new Keyring({ type: 'sr25519' })
           const seed = res.toString().replace(/[\r\n]/g, '')
@@ -86,12 +118,17 @@ export default async function kafkaConsumer(api) {
             .transfer(receiver, numberToHex(+amount), memo)
             .signAndSend(pair, { nonce },
               ({ events = [], status }) => {
-                handleKafkaEvent(events, status, id, producer, pair.address, nonceManager)
+                const payload = {
+                  id,
+                  fromDid,
+                  address: pair.address
+                }
+                handleKafkaEvent(events, status, producer, payload, nonceManager)
               })
             .catch(e => {
               kafkaLogger.error(e, 'kafka internal error')
-              // nonceManager.sub(pair.address)
-              nonceManager.alter(pair.address)
+              const newNonce = nonceManager.sub(pair.address)
+              kafkaLogger.info(`reset nonce to ${newNonce} for address: ${pair.address}`)
             })
         } catch (error) {
           kafkaLogger.error(error, 'kafka external error')
