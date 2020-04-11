@@ -42,19 +42,21 @@ const handleKafkaEvent = (events, status, producer, payload, nonceManager) => {
     })
 
     const tstatus = isSuccessful ? 1 : 2
-    kafkaLogger.info(id, tstatus, hash)
+    kafkaLogger.info(fromDid, id, tstatus, hash)
 
     // kafka transfer record
-    const transferRecord = {
-      id: `${fromDid}_${id}`,
-      hash
-    }
-
-    db.insert(transferRecord, (err) => {
-      if (err) {
-        kafkaLogger.error('insert transfer record error')
+    if (isSuccessful) {
+      const transferRecord = {
+        id: `${fromDid}_${id}`,
+        hash
       }
-    })
+
+      db.insert(transferRecord, (err) => {
+        if (err) {
+          kafkaLogger.error('insert transfer record error')
+        }
+      })
+    }
 
     producer.send({
       topic: 'topic_testnet_transfer_callback',
