@@ -19,7 +19,9 @@ const getRecords = async (id) => new Promise((resolve, reject) => {
 })
 
 const handleKafkaEvent = (events, status, producer, payload, nonceManager) => {
-  const { id, fromDid, address } = payload
+  const {
+    id, fromDid, toDid, address
+  } = payload
   kafkaLogger.info('Transaction status:', status.type)
   if (status.type === 'Future' || status.type === 'Invalid') {
     const newNonce = nonceManager.sub(address)
@@ -42,7 +44,7 @@ const handleKafkaEvent = (events, status, producer, payload, nonceManager) => {
     })
 
     const tstatus = isSuccessful ? 1 : 2
-    kafkaLogger.info(fromDid, id, tstatus, hash)
+    kafkaLogger.info(toDid, id, tstatus, hash)
 
     // kafka transfer record
     if (isSuccessful) {
@@ -123,6 +125,7 @@ export default async function kafkaConsumer(api) {
                 const payload = {
                   id,
                   fromDid,
+                  toDid,
                   address: pair.address
                 }
                 handleKafkaEvent(events, status, producer, payload, nonceManager)
