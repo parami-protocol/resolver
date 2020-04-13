@@ -31,13 +31,49 @@
       <button class="create-sns">社交账号</button>
       <button class="lock">抵押</button>
       <button class="unlock">赎回</button>
-      <button class="test">Test</button>
+      <!-- <button class="test">TestFuture</button>
+      <button class="testInvalid">TestInvalid</button>
+      <button class="testLow">TestLow</button> -->
     </div>
     <script src="https://cdn.bootcss.com/socket.io/2.2.0/socket.io.slim.js"></script>
     <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.slim.min.js"></script>
     <script>
       $(function() {
         const socket = io();
+
+        function testBatchFuture(num) {
+          console.log('batch future')
+          for (let i = 0; i < num; i++) {
+            socket.emit('create_by_sns', {
+              type: '1',
+              sid: 'test' + Math.floor(Math.random() * 10000),
+              socialSuperior: 'wxid_7h9gf2umzeja22',
+            })
+          }
+        }
+
+        function testInvalid(num) {
+          console.log('batch invalid')
+          for (let i = 0; i < num; i++) {
+            socket.emit('create_by_sns', {
+              type: '1',
+              sid: 'test' + Math.floor(Math.random() * 10000),
+              socialSuperior: 'wxid_7h9gf2umzeja22',
+            })
+          }
+        }
+
+        function testLow(num) {
+          console.log('batch low')
+          for (let i = 0; i < num; i++) {
+            socket.emit('create_by_sns', {
+              type: '1',
+              sid: 'test' + Math.floor(Math.random() * 10000),
+              socialSuperior: 'wxid_7h9gf2umzeja22',
+            })
+          }
+        }
+
         $('.create-genesis').click(function() {
           console.log('create genesis')          
           // 创世账号
@@ -103,16 +139,15 @@
         })
 
         $('.test').click(function() {
-          const data = {
-              "superior": "0x4f148872c125023a1bfe48f47117831fede7b2d59c341b39040b92ae3e024707",
-              "address": "5Ceuib6t81VURBhkejHUTADsbrTqyfqvtqeqhjczTDKR2hJY",
-              "pubkey": "0x1a1645384690e4540cdf55944518a6a6996b5559a63c80d6b4e0657a94e5bd6b",
-              "didType": "1",
-              "socialAccount": "hehe010138"
-          }
-          
-          console.log('test--', data)
-          socket.emit('create_by_old', data)
+          testBatchFuture(50)
+        })
+
+        $('.testInvalid').click(function() {
+          testInvalid(50)
+        })
+
+        $('.testLow').click(function() {
+          testLow(50)
         })
 
         socket.on('connect', function() {

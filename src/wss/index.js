@@ -5,19 +5,22 @@ import Keyring from '@polkadot/keyring'
 import {
   stringToHex, numberToHex, isHex, u8aToHex
 } from '@polkadot/util'
-import { didToHex, NonceManager, getIPAdress } from 'libs/util'
+import {
+  didToHex, NonceManager, getIPAdress, reload
+} from 'libs/util'
 import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
 import errors from 'libs/errors'
 
 const homedir = os.homedir()
-const handleResult = (events, status, socket, payload, api, nonceManager, address) => {
+const handleResult = (events, status, socket, payload, api) => {
   logger.info('Transaction status:', status.toString())
   if (status.type === 'Future' || status.type === 'Invalid') {
-    if (nonceManager) {
-      const newNonce = nonceManager.sub(address)
-      logger.info(`reset nonce to ${newNonce} for address: ${address}`)
-    }
+    // if (nonceManager) {
+    //   const newNonce = nonceManager.sub(address)
+    //   logger.info(`reset nonce to ${newNonce} for address: ${address}`)
+    // }
+    process.exit(0)
   }
   if (status.isFinalized) {
     logger.info('Completed at block hash', status.asFinalized.toHex())
@@ -69,6 +72,7 @@ const handleError = (error, msg, socket, nonceManager, address) => {
   socket.emit('tx_failed', {
     msg
   })
+  process.exit(0)
 }
 
 const getSigner = () => new Promise((resolve, reject) => {
@@ -139,7 +143,7 @@ export default async function prochainWsServer(api, socket) {
         .create(pubkey, address, didType, '', socialAccount, superior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, payload, api, nonceManager, signer.address)
+            handleResult(events, status, socket, payload, api)
           })
         .catch(error => {
           handleError(error, 'internal error', socket, nonceManager, signer.address)
@@ -185,7 +189,7 @@ export default async function prochainWsServer(api, socket) {
         .create(pubkey, address, didType, superior, socialAccount, socialSuperior)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
-            handleResult(events, status, socket, payload, api, nonceManager, signer.address)
+            handleResult(events, status, socket, payload, api)
           })
         .catch(error => {
           handleError(error, 'internal error', socket, nonceManager, signer.address)
@@ -242,3 +246,8 @@ export default async function prochainWsServer(api, socket) {
 	return null
   })
 }
+
+process.on('exit', () => {
+  logger.info('restart from wss---------------')
+  reload()
+})

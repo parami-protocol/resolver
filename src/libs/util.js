@@ -8,6 +8,7 @@ import {
 import crypto from 'crypto'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import types from 'libs/types'
+import { execFile } from 'child_process'
 
 require('dotenv').config({
   path: `.env${process.env.NODE_ENV ? '.development' : ''}`
@@ -192,6 +193,16 @@ export function getEventSections() {
   } else {
       return ["all"]
   }
+}
+
+export function reload() {
+  const shPath = require('path').join(process.cwd(), './nohup.sh')
+  console.log(shPath, 'sh--path---')
+  execFile(shPath, ['reload'], null, (err, stdout, stderr) => {
+    if (err) return console.log(err)
+    if (stdout) console.log(stdout.toString().trim())
+    if (stderr) console.log(stderr)
+  })
 }
 
 /*
