@@ -11,3 +11,4 @@ yarn.lock
 .env
 .env.development
 db
+public/reg.html
