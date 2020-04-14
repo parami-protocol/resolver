@@ -5,7 +5,7 @@ import cors from 'cors'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
-import { createApi } from 'libs/util'
+import { createApi, reload } from 'libs/util'
 import router from './server/router'
 import config from './config'
 import wsServer from './wss'
@@ -106,3 +106,8 @@ const entry = async () => {
 }
 
 entry().catch(console.log)
+
+process.on('exit', () => {
+  console.log('restart server---------------')
+  reload()
+})

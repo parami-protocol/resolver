@@ -3,7 +3,7 @@ import fs from 'fs'
 import { Kafka } from 'kafkajs'
 import Keyring from '@polkadot/keyring'
 import { numberToHex } from '@polkadot/util'
-import { didToHex, NonceManager, reload } from 'libs/util'
+import { didToHex, NonceManager } from 'libs/util'
 import { kafkaLogger } from 'libs/log'
 import Datastore from 'nedb'
 
@@ -144,8 +144,3 @@ export default async function kafkaConsumer(api) {
     kafkaLogger.error(error, 'kafka error')
   }
 }
-
-process.on('exit', () => {
-  kafkaLogger.info('restart from kafka-----------')
-  reload()
-})

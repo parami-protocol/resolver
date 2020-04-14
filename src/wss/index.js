@@ -6,7 +6,7 @@ import {
   stringToHex, numberToHex, isHex, u8aToHex
 } from '@polkadot/util'
 import {
-  didToHex, NonceManager, getIPAdress, reload
+  didToHex, NonceManager, getIPAdress
 } from 'libs/util'
 import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
@@ -246,8 +246,3 @@ export default async function prochainWsServer(api, socket) {
 	return null
   })
 }
-
-process.on('exit', () => {
-  logger.info('restart from wss---------------')
-  reload()
-})
