@@ -1,4 +1,5 @@
 import { didToHex, metadataFormat } from 'libs/util'
+import { u8aToString } from '@polkadot/util'
 
 export default async (req, res, api) => {
   try {
@@ -13,6 +14,10 @@ export default async (req, res, api) => {
 
     // reserved balance
     result.reserved_balance = balances.reserved.toString() / 10 ** 15
+
+    // short index
+    const shortIndex = await api.query.did.didIndices(userKey)
+    result.short_index = u8aToString(shortIndex)
 
     res.json({
       result: true,

@@ -16,16 +16,9 @@ const homedir = os.homedir()
 const handleResult = (events, status, socket, payload, api) => {
   logger.info('Transaction status:', status.toString())
   if (status.type === 'Future' || status.type === 'Invalid') {
-    // if (nonceManager) {
-    //   const newNonce = nonceManager.sub(address)
-    //   logger.info(`reset nonce to ${newNonce} for address: ${address}`)
-    // }
     process.exit(0)
   }
-  if (status.isFinalized) {
-    logger.info('Completed at block hash', status.asFinalized.toHex())
-    logger.info('Events:')
-
+  if (status.isInBlock) {
     let txStatus = true
     let errorMsg = 'sign error, please check your params'
     events.forEach(({ phase, event: { data, section, method } }) => {
@@ -47,8 +40,8 @@ const handleResult = (events, status, socket, payload, api) => {
       }
     })
 
-    const { event: { data, method } } = events[events.length - 2]
     if (txStatus) {
+      const { event: { data, method } } = events.filter(({ event }) => event.section === 'did').pop()
       socket.emit(method, {
         status,
         msg: data.toString(),
@@ -61,6 +54,8 @@ const handleResult = (events, status, socket, payload, api) => {
         payload
       })
     }
+  } else if (status.isFinalized) {
+    logger.info('Finalized block hash', status.asFinalized.toHex())
   }
 }
 
@@ -100,22 +95,22 @@ export default async function prochainWsServer(api, socket) {
 
   socket.on('create_by_sns', async payload => {
     try {
-      const { sid, type, socialSuperior } = payload
-      logger.info(sid, type, socialSuperior, 'sns params')
+      const { unionid, type, shortIndex } = payload
+      logger.info(unionid, type, shortIndex, 'creation params')
       // social accounnt
-      const hashedSid = blake2AsHex(sid, 256)
-      const hashedSid2 = blake2AsHex(`${hashedSid}1`, 256)
+      // const hashedSid = blake2AsHex(unionid, 256)
+      // const hashedSid2 = blake2AsHex(`${hashedSid}1`, 256)
 
       // social superior
-      const hashedSocial = blake2AsHex(socialSuperior, 256)
-      const didHash = await api.query.did.socialAccount(hashedSid2)
-      if (!didHash.isEmpty) {
-        socket.emit('Created', {
-          status: { exists: true },
-          payload
-        })
-        return logger.info('账号已存在')
-      }
+      // const hashedSocial = blake2AsHex(superior, 256)
+      // const didHash = await api.query.did.socialAccount(hashedSid2)
+      // if (!didHash.isEmpty) {
+      //   socket.emit('Created', {
+      //     status: { exists: true },
+      //     payload
+      //   })
+      //   return logger.info('账号已存在')
+      // }
 
       const mnemonicPhrase = mnemonicGenerate()
       const keyring = new Keyring({ type: 'sr25519' })
@@ -137,10 +132,14 @@ export default async function prochainWsServer(api, socket) {
       const nonce = await nonceManager.getNonce(signer.address)
       const pubkey = u8aToHex(publicKey)
       const didType = stringToHex(type)
-      const socialAccount = stringToHex(hashedSid)
-      const superior = stringToHex(hashedSocial)
+      const socialHash = stringToHex(blake2AsHex(unionid, 256))
+
+      // find superior by short index
+      const indexHash = blake2AsHex(shortIndex, 256)
+      const superiorUserKey = await api.query.did.userKeys(indexHash)
+
       api.tx.did
-        .create(pubkey, address, didType, '', socialAccount, superior)
+        .create(pubkey, address, didType, superiorUserKey, socialHash, null)
         .signAndSend(signer, { nonce },
           ({ events = [], status }) => {
             handleResult(events, status, socket, payload, api)

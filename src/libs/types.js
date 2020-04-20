@@ -54,7 +54,7 @@ const types = {
     out_amount: 'Balance'
   },
   HTLCChain: {
-    _enum: ['ETHMain', 'PRA']
+    _enum: ['ETHMain', 'PRM']
   },
   HTLCStates: {
     _enum: ['INVALID', 'OPEN', 'COMPLETED', 'EXPIRED']
