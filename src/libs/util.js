@@ -193,10 +193,10 @@ export function getEventSections() {
 
 export function reload() {
   let shPath = require('path').join(process.cwd(), './scripts/nohup.sh')
-  console.log(shPath, 'shell path---')
   if (process.env.mode === 'stage') {
     shPath = require('path').join(process.cwd(), './scripts/stage_nohup.sh')
   }
+  console.log(shPath, 'shell path---')
   execFile(shPath, ['reload'], null, (err, stdout, stderr) => {
     if (err) return console.log(err)
     if (stdout) console.log(stdout.toString().trim())

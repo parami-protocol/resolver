@@ -205,7 +205,7 @@ export default async function prochainWsServer(api, socket) {
 
       // auth check
       const ipAdd = getIPAdress()
-      if (ipAdd !== '172.21.0.3' && process.env.NODE_ENV !== 'development') {
+      if (ipAdd !== '172.21.0.3' && process.env.mode === 'production') {
         const rs = await checkAuth(token)
         if (!rs.success) {
           return handleError(rs.message, socket)
