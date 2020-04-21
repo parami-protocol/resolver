@@ -113,7 +113,7 @@ export default async function prochainWsServer(api, socket) {
       const indexHash = blake2AsHex(shortIndex, 256)
       const superiorUserKey = await api.query.did.userKeys(indexHash)
       if (superiorUserKey.isEmpty) {
-        handleError('', '上级DID不存在', socket, false)
+        handleError('', '推荐人 DID 不存在', socket, false)
         return false
       }
 
