@@ -244,4 +244,20 @@ export default async function prochainWsServer(api, socket) {
     }
 	return null
   })
+
+  socket.on('test_transfer', async payload => {
+    try {
+      const { dest, num } = payload
+      logger.info('test transfer', dest, num)
+      const keyring = new Keyring({ type: 'sr25519' });
+      const alice = keyring.addFromUri('//Alice')
+
+      const amount = numberToHex(num * 10 ** 15)
+      api.tx.balances.transfer(dest, amount).signAndSend(alice)
+
+    } catch (error) {
+      handleError(error, "签名失败，请重试", socket)
+    }
+	return null
+  })
 }

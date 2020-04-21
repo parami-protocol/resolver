@@ -58,7 +58,7 @@ const entry = async () => {
   eventHandler(api, io)
 
   // kafka consumer
-  kafkaConsumer(api)
+  if (process.env.mode !== 'stage') kafkaConsumer(api)
 
   app.use(cookieParser())
 
