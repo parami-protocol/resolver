@@ -1,1 +1,1 @@
-nohup sh ./start.sh reload > /dev/null 2>&1 &
+nohup sh ./stage.sh reload > /dev/null 2>&1 &

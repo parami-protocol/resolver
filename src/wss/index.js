@@ -109,6 +109,14 @@ export default async function prochainWsServer(api, socket) {
       //   return logger.info('账号已存在')
       // }
 
+      // find superior by short index
+      const indexHash = blake2AsHex(shortIndex, 256)
+      const superiorUserKey = await api.query.did.userKeys(indexHash)
+      if (superiorUserKey.isEmpty) {
+        handleError('', '上级DID不存在', socket, false)
+        return false
+      }
+
       const mnemonicPhrase = mnemonicGenerate()
       const keyring = new Keyring({ type: 'sr25519' })
       const { address, publicKey } = keyring.addFromMnemonic(mnemonicPhrase)
@@ -130,14 +138,6 @@ export default async function prochainWsServer(api, socket) {
       const pubkey = u8aToHex(publicKey)
       const didType = stringToHex(type)
       const socialHash = stringToHex(blake2AsHex(unionid, 256))
-
-      // find superior by short index
-      const indexHash = blake2AsHex(shortIndex, 256)
-      const superiorUserKey = await api.query.did.userKeys(indexHash)
-      if (superiorUserKey.isEmpty) {
-        handleError('', '上级DID不存在', socket, false)
-        return false
-      }
 
       api.tx.did
         .create(pubkey, address, didType, superiorUserKey, socialHash, null)
