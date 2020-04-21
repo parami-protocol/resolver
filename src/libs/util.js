@@ -10,10 +10,6 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import types from 'libs/types'
 import { execFile } from 'child_process'
 
-require('dotenv').config({
-  path: `.env${process.env.NODE_ENV ? '.development' : ''}`
-})
-
 const provider = new WsProvider(process.env.SUBSTRATE_HOST)
 
 const algorithm = 'aes-256-ctr'

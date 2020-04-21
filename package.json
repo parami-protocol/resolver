@@ -15,8 +15,9 @@
     "src"
   ],
   "scripts": {
-    "start": "NODE_ENV=development nodemon --exec babel-node ./src/index.js",
-    "serve": "node ./dist/index.js",
+    "start": "nodemon -r dotenv/config --exec babel-node ./src/index.js dotenv_config_path=.env.development",
+    "serve": "node -r dotenv/config ./dist/index.js dotenv_config_path=.env.production",
+    "stage": "node -r dotenv/config ./dist/index.js dotenv_config_path=.env.stage",
     "test": "jest",
     "coverage": "npm test -- --coverage",
     "postcoverage": "open-cli coverage/lcov-report/index.html",
