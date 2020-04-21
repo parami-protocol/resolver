@@ -59,15 +59,12 @@ const handleResult = (events, status, socket, payload, api) => {
   }
 }
 
-const handleError = (error, msg, socket, nonceManager, address) => {
+const handleError = (error, msg, socket, isRestart = true) => {
   logger.error(error, msg)
-  if (address) {
-    nonceManager.sub(address)
-  }
   socket.emit('tx_failed', {
     msg
   })
-  process.exit(0)
+  if (isRestart) process.exit(0)
 }
 
 const getSigner = () => new Promise((resolve, reject) => {
@@ -137,6 +134,10 @@ export default async function prochainWsServer(api, socket) {
       // find superior by short index
       const indexHash = blake2AsHex(shortIndex, 256)
       const superiorUserKey = await api.query.did.userKeys(indexHash)
+      if (superiorUserKey.isEmpty) {
+        handleError('', '上级DID不存在', socket, false)
+        return false
+      }
 
       api.tx.did
         .create(pubkey, address, didType, superiorUserKey, socialHash, null)
@@ -145,7 +146,7 @@ export default async function prochainWsServer(api, socket) {
             handleResult(events, status, socket, payload, api)
           })
         .catch(error => {
-          handleError(error, 'internal error', socket, nonceManager, signer.address)
+          handleError(error, 'internal error', socket)
         })
 
       fs.writeFile(
@@ -168,7 +169,7 @@ export default async function prochainWsServer(api, socket) {
         }
       )
     } catch (error) {
-      handleError(error, '创建DID失败，请重试', socket)
+      handleError(error, '创建DID失败，请重试', socket, false)
     }
     return null
   })
@@ -191,10 +192,10 @@ export default async function prochainWsServer(api, socket) {
             handleResult(events, status, socket, payload, api)
           })
         .catch(error => {
-          handleError(error, 'internal error', socket, nonceManager, signer.address)
+          handleError(error, 'internal error', socket)
         })
     } catch (error) {
-      handleError(error, "创建DID失败，请重试", socket)
+      handleError(error, "创建DID失败，请重试", socket, false)
     }
 	return null
   })
@@ -208,7 +209,7 @@ export default async function prochainWsServer(api, socket) {
       if (ipAdd !== '172.21.0.3' && process.env.mode === 'production') {
         const rs = await checkAuth(token)
         if (!rs.success) {
-          return handleError(rs.message, socket)
+          return handleError(rs.message, socket, false)
         }
       }
 
@@ -240,7 +241,7 @@ export default async function prochainWsServer(api, socket) {
         })
 
     } catch (error) {
-      handleError(error, "签名失败，请重试", socket)
+      handleError(error, "签名失败，请重试", socket, false)
     }
 	return null
   })
@@ -256,7 +257,7 @@ export default async function prochainWsServer(api, socket) {
       api.tx.balances.transfer(dest, amount).signAndSend(alice)
 
     } catch (error) {
-      handleError(error, "签名失败，请重试", socket)
+      handleError(error, "签名失败，请重试", socket, false)
     }
 	return null
   })
