@@ -9,7 +9,7 @@ export default {
   ExceedsMaxQuota: '您的下级数量超过了最高配额',
   PublicKeyUsed: '当前公钥已经被使用',
   NotEnoughBalance: '您没有足够的余额',
-  LockNotFulfilled: '第一次需要抵押至少50个PRM',
+  LockNotFulfilled: '第一次需要抵押至少10个PRM',
   UnreservedFundsExceed: '申请解锁的PRM超过了您的抵押总额',
   UnlockTimeNotReach: '解锁时间还没有到',
   InvalidAddressFormat: '请填写正确的地址格式',
