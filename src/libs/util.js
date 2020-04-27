@@ -223,6 +223,18 @@ export function getIPAdress() {
   }  
 } 
 
+export async function getRecords(db, query) {
+  return new Promise((resolve, reject) => {
+    db.findOne(query, (err, docs) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(docs)
+      }
+    })
+  })
+}
+
 export class NonceManager {
   constructor(api) {
     this.api = api

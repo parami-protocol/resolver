@@ -2,21 +2,12 @@ import os from 'os'
 import fs from 'fs'
 import { Kafka } from 'kafkajs'
 import Keyring from '@polkadot/keyring'
-import { numberToHex } from '@polkadot/util'
+import { numberToHex, getRecords } from '@polkadot/util'
 import { didToHex, NonceManager } from 'libs/util'
 import { kafkaLogger } from 'libs/log'
 import Datastore from 'nedb'
 
-const db = new Datastore({ filename: './db/reissue', autoload: true })
-const getRecords = async (id) => new Promise((resolve, reject) => {
-  db.findOne({ id }, (err, docs) => {
-    if (err) {
-      reject(err)
-    } else {
-      resolve(docs)
-    }
-  })
-})
+const reissue = new Datastore({ filename: './db/reissue', autoload: true })
 
 const handleKafkaEvent = (events, status, producer, payload) => {
   const { id, fromDid, toDid } = payload
@@ -52,7 +43,7 @@ const handleKafkaEvent = (events, status, producer, payload) => {
         hash
       }
 
-      db.insert(transferRecord, (err) => {
+      reissue.insert(transferRecord, (err) => {
         if (err) {
           kafkaLogger.error('insert transfer record error')
         }
@@ -102,7 +93,7 @@ export default async function kafkaConsumer(api) {
             id, from_did: fromDid, to_did: toDid, amount, memo
           } = JSON.parse(message.value.toString())
 
-          const record = await getRecords(`${fromDid}_${id}`)
+          const record = await getRecords(reissue, { id: `${fromDid}_${id}` })
           if (record) {
             kafkaLogger.info('this transaction already sent')
             return

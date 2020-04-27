@@ -6,11 +6,14 @@ import {
   stringToHex, numberToHex, isHex, u8aToHex
 } from '@polkadot/util'
 import {
-  didToHex, NonceManager, getIPAdress
+  didToHex, NonceManager, getIPAdress, getRecords
 } from 'libs/util'
 import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
 import errors from 'libs/errors'
+import Datastore from 'nedb'
+
+const faucet = new Datastore({ filename: './db/faucet', autoload: true })
 
 const homedir = os.homedir()
 const handleResult = (events, status, socket, payload, api) => {
@@ -209,7 +212,7 @@ export default async function prochainWsServer(api, socket) {
       if (ipAdd !== '172.21.0.3' && process.env.mode === 'production') {
         const rs = await checkAuth(token)
         if (!rs.success) {
-          return handleError(rs.message, socket, false)
+          return handleError('', rs.message, socket, false)
         }
       }
 
@@ -248,16 +251,26 @@ export default async function prochainWsServer(api, socket) {
 
   socket.on('test_transfer', async payload => {
     try {
-      const { dest, num } = payload
-      logger.info('test transfer', dest, num)
+      const { dest, num, source } = payload
+      logger.info('test transfer', dest, num, source)
+      const record = await getRecords(faucet, { id: dest })
+      if (record && source !== 0) {
+        return handleError('', '您已经领取过测试币', socket, false)
+      }
+
       const keyring = new Keyring({ type: 'sr25519' });
       const alice = keyring.addFromUri('//Alice')
 
       const receiver = didToHex(dest)
       const amount = numberToHex(num * 10 ** 15)
       // api.tx.balances.transfer(dest, amount).signAndSend(alice)
-      api.tx.did.transfer(receiver, numberToHex(+amount), '').signAndSend(alice)
+      const { nonce } = await api.query.system.account(alice.address)
+      api.tx.did.transfer(receiver, numberToHex(+amount), '').signAndSend(alice, { nonce })
 
+      faucet.insert({
+        id: dest,
+        amount
+      })
     } catch (error) {
       handleError(error, "签名失败，请重试", socket, false)
     }
