@@ -261,12 +261,12 @@ export default async function prochainWsServer(api, socket) {
       const keyring = new Keyring({ type: 'sr25519' });
       const alice = keyring.addFromUri('//Alice')
 
-      const receiver = didToHex(dest)
       const amount = numberToHex(num * 10 ** 15)
       if (type === 1) {
         api.tx.balances.transfer(dest, amount).signAndSend(alice)
       } else {
         const { nonce } = await api.query.system.account(alice.address)
+        const receiver = didToHex(dest)
         api.tx.did.transfer(receiver, numberToHex(+amount), '').signAndSend(alice, { nonce })
         faucet.insert({
           id: dest,
