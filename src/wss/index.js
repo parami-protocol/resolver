@@ -253,8 +253,10 @@ export default async function prochainWsServer(api, socket) {
       const keyring = new Keyring({ type: 'sr25519' });
       const alice = keyring.addFromUri('//Alice')
 
+      const receiver = didToHex(dest)
       const amount = numberToHex(num * 10 ** 15)
-      api.tx.balances.transfer(dest, amount).signAndSend(alice)
+      // api.tx.balances.transfer(dest, amount).signAndSend(alice)
+      api.tx.did.transfer(receiver, numberToHex(+amount), '').signAndSend(alice)
 
     } catch (error) {
       handleError(error, "签名失败，请重试", socket, false)
