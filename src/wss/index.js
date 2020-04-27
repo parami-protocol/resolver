@@ -251,8 +251,8 @@ export default async function prochainWsServer(api, socket) {
 
   socket.on('test_transfer', async payload => {
     try {
-      const { dest, num, source } = payload
-      logger.info('test transfer', dest, num, source)
+      const { dest, num, type, source } = payload
+      logger.info('test transfer', dest, num, type, source)
       const record = await getRecords(faucet, { id: dest })
       if (record && source !== 0) {
         return handleError('', '您已经领取过测试币', socket, false)
@@ -263,14 +263,16 @@ export default async function prochainWsServer(api, socket) {
 
       const receiver = didToHex(dest)
       const amount = numberToHex(num * 10 ** 15)
-      // api.tx.balances.transfer(dest, amount).signAndSend(alice)
-      const { nonce } = await api.query.system.account(alice.address)
-      api.tx.did.transfer(receiver, numberToHex(+amount), '').signAndSend(alice, { nonce })
-
-      faucet.insert({
-        id: dest,
-        amount
-      })
+      if (type === 1) {
+        api.tx.balances.transfer(dest, amount).signAndSend(alice)
+      } else {
+        const { nonce } = await api.query.system.account(alice.address)
+        api.tx.did.transfer(receiver, numberToHex(+amount), '').signAndSend(alice, { nonce })
+        faucet.insert({
+          id: dest,
+          amount
+        })
+      }
     } catch (error) {
       handleError(error, "签名失败，请重试", socket, false)
     }
