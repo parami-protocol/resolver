@@ -174,6 +174,9 @@ export function metadataFormat(metadata) {
           }
           break
         }
+        case 'donate':
+          metadata[key] = metadata[key] && formatHexNumber(item)
+          break
         default:
           break
       }
