@@ -108,31 +108,28 @@ export default async function kafkaConsumer(api) {
           kafkaLogger.info(fromDid, toDid, amount, nonce, 'kafka transfer')
 
           // transfer from airdrop account
-          api.tx.did
-            .transfer(receiver, numberToHex(+amount), memo)
-            .signAndSend(pair, { nonce },
-              ({ events = [], status }) => {
-                const payload = {
+          const utx = api.tx.did.transfer(receiver, numberToHex(+amount), memo)
+          console.log(utx.hash.toHex(), 'transaction hash')
+          producer.send({
+            topic: 'topic_testnet_transfer_callback',
+            messages: [
+              {
+                value: JSON.stringify({
                   id,
-                  fromDid,
-                  toDid,
-                  address: pair.address
-                }
-                handleKafkaEvent(events, status, producer, payload)
-              })
-            .then(trxHash => {
-              console.log(trxHash, 'transaction hash')
-              producer.send({
-                topic: 'topic_testnet_transfer_callback',
-                messages: [
-                  {
-                    value: JSON.stringify({
-                      id,
-                      trx: trxHash
-                    })
-                  }
-                ]
-              })
+                  trx: utx.hash.toHex()
+                })
+              }
+            ]
+          })
+          utx.signAndSend(pair, { nonce },
+            ({ events = [], status }) => {
+              const payload = {
+                id,
+                fromDid,
+                toDid,
+                address: pair.address
+              }
+              handleKafkaEvent(events, status, producer, payload)
             })
             .catch(e => {
               kafkaLogger.error(e, 'kafka internal error')
