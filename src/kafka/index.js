@@ -108,7 +108,8 @@ export default async function kafkaConsumer(api) {
           kafkaLogger.info(fromDid, toDid, amount, nonce, 'kafka transfer')
 
           // transfer from airdrop account
-          const utx = api.tx.did.transfer(receiver, numberToHex(+amount), memo)
+          const utx = api.tx.did
+            .transfer(receiver, numberToHex(+amount), memo).sign(pair, { nonce })
           const trxHash = utx.hash.toHex()
           console.log(trxHash, 'transaction hash')
           producer.send({
@@ -122,16 +123,15 @@ export default async function kafkaConsumer(api) {
               }
             ]
           })
-          utx.signAndSend(pair, { nonce },
-            ({ events = [], status }) => {
-              const payload = {
-                id,
-                fromDid,
-                toDid,
-                address: pair.address
-              }
-              handleKafkaEvent(events, status, producer, payload)
-            })
+          utx.send(({ events = [], status }) => {
+            const payload = {
+              id,
+              fromDid,
+              toDid,
+              address: pair.address
+            }
+            handleKafkaEvent(events, status, producer, payload)
+          })
             .catch(e => {
               kafkaLogger.error(e, 'kafka internal error')
               // const newNonce = nonceManager.sub(pair.address)
