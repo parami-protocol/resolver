@@ -57,7 +57,7 @@ const handleKafkaEvent = (events, status, producer, payload) => {
           value: JSON.stringify({
             id,
             status: tstatus,
-            trx: hash
+            block_hash: hash
           })
         }
       ]
@@ -120,6 +120,20 @@ export default async function kafkaConsumer(api) {
                 }
                 handleKafkaEvent(events, status, producer, payload)
               })
+            .then(trxHash => {
+              console.log(trxHash, 'transaction hash')
+              producer.send({
+                topic: 'topic_testnet_transfer_callback',
+                messages: [
+                  {
+                    value: JSON.stringify({
+                      id,
+                      trx: trxHash
+                    })
+                  }
+                ]
+              })
+            })
             .catch(e => {
               kafkaLogger.error(e, 'kafka internal error')
               // const newNonce = nonceManager.sub(pair.address)
