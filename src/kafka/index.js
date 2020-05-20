@@ -109,14 +109,15 @@ export default async function kafkaConsumer(api) {
 
           // transfer from airdrop account
           const utx = api.tx.did.transfer(receiver, numberToHex(+amount), memo)
-          console.log(utx.hash.toHex(), 'transaction hash')
+          const trxHash = utx.hash.toHex()
+          console.log(trxHash, 'transaction hash')
           producer.send({
             topic: 'topic_testnet_transfer_callback',
             messages: [
               {
                 value: JSON.stringify({
                   id,
-                  trx: utx.hash.toHex()
+                  trx: trxHash
                 })
               }
             ]
