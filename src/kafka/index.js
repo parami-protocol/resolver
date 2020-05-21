@@ -10,14 +10,30 @@ import Datastore from 'nedb'
 const reissue = new Datastore({ filename: './db/reissue', autoload: true })
 
 const handleKafkaEvent = (events, status, producer, payload) => {
-  const { id, fromDid, toDid } = payload
+  const {
+    id, fromDid, toDid, trx
+  } = payload
   kafkaLogger.info('Transaction status:', status.type)
   if (status.type === 'Future' || status.type === 'Invalid') {
     // const newNonce = nonceManager.sub(address)
     // kafkaLogger.info(`reset nonce to ${newNonce} for address: ${address}`)
     process.exit(0)
   }
-  if (status.isFinalized) {
+  if (status.isInBlock) {
+    const blockHash = status.asInBlock.toHex()
+    producer.send({
+      topic: 'topic_testnet_transfer_callback',
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            trx,
+            block_hash: blockHash
+          })
+        }
+      ]
+    })
+  } else if (status.isFinalized) {
     const hash = status.asFinalized.toHex()
     kafkaLogger.info('Completed at block hash', hash)
     kafkaLogger.info('Events:')
@@ -56,8 +72,7 @@ const handleKafkaEvent = (events, status, producer, payload) => {
         {
           value: JSON.stringify({
             id,
-            status: tstatus,
-            block_hash: hash
+            status: tstatus
           })
         }
       ]
@@ -112,23 +127,13 @@ export default async function kafkaConsumer(api) {
             .transfer(receiver, numberToHex(+amount), memo).sign(pair, { nonce })
           const trxHash = utx.hash.toHex()
           console.log(trxHash, 'transaction hash')
-          producer.send({
-            topic: 'topic_testnet_transfer_callback',
-            messages: [
-              {
-                value: JSON.stringify({
-                  id,
-                  trx: trxHash
-                })
-              }
-            ]
-          })
           utx.send(({ events = [], status }) => {
             const payload = {
               id,
               fromDid,
               toDid,
-              address: pair.address
+              address: pair.address,
+              trx: trxHash
             }
             handleKafkaEvent(events, status, producer, payload)
           })
