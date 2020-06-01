@@ -20,6 +20,7 @@ const balancesListeners = []
 // 全局变量
 global.nonceMap = {}
 global.hashName = {}
+global.socketToDid = {}
 
 const entry = async () => {
   const api = await createApi()
@@ -34,6 +35,7 @@ const entry = async () => {
       const { name, address } = msg
       console.log(name, 'client name')
       global.hashName[name] = socket.id
+      global.socketToDid[socket.id] = name
 
       if (!balancesListeners.includes(address)) {
         balancesListeners.push(address)

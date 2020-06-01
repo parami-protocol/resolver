@@ -3,7 +3,7 @@ import os from 'os'
 import { mnemonicGenerate, blake2AsHex } from '@polkadot/util-crypto'
 import Keyring from '@polkadot/keyring'
 import {
-  stringToHex, numberToHex, isHex, u8aToHex
+  stringToHex, numberToHex, isHex, u8aToHex, hexToString
 } from '@polkadot/util'
 import {
   didToHex, NonceManager, getIPAdress, getRecords
@@ -12,10 +12,50 @@ import { checkAuth } from 'libs/auth'
 import logger from 'libs/log'
 import errors from 'libs/errors'
 import Datastore from 'nedb'
+import schedule from 'node-schedule'
 
-const faucet = new Datastore({ filename: './db/faucet', autoload: true })
-
+let job
 const homedir = os.homedir()
+const faucet = new Datastore({ filename: './db/faucet', autoload: true })
+const adsHistory = new Datastore({ filename: './db/adshistory', autoload: true })
+
+const getNewAds = async (api, socket) => {
+  const did = global.socketToDid[socket.id]
+  const ads = did && await getRecords(adsHistory, { did })
+  let adsId = ads ? ads.adsId + 1 : 0
+  let tries = 0
+  let isBreak = true
+  // console.log(isInit)
+  while (isBreak) {
+    // query ads
+    const data = await api.query.ads.adsRecords(adsId)
+    console.log(adsId, tries, data.active, data.isEmpty, 'data---------')
+    if (data && !data.isEmpty) {
+      const adsRecord = data.toJSON()
+      Object.keys(adsRecord).forEach(key => {
+        if (key === 'advertiser' || key === 'topic' || key === 'display_page' || key === 'landing_page') {
+          adsRecord[key] = hexToString(adsRecord[key])
+        }
+      })
+      if (!adsRecord.active) {
+        adsId += 1
+        tries += 1
+      } else {
+        socket.emit('new-ads', adsRecord)
+        isBreak = false
+        adsId+=1
+        adsHistory.update({
+          did
+        }, { did, adsId }, { upsert: true })
+      }
+      if (tries > 10) isBreak = false
+    } else {
+      isBreak = false
+      socket.emit('new-ads', {})
+    }
+  }
+}
+
 const handleResult = (events, status, socket, payload, api) => {
   logger.info('Transaction status:', status.toString())
   if (status.type === 'Future' || status.type === 'Invalid') {
@@ -89,28 +129,32 @@ const getSigner = () => new Promise((resolve, reject) => {
 })
 
 export default async function prochainWsServer(api, socket) {
+  console.log('wss server', socket.id)
+  // schedule job at every 0 second
+  if (job) job.cancel()
+  job = schedule.scheduleJob('0 0 8,13,20 * * *', async (fireDate) => {
+  // job = schedule.scheduleJob('*/30 * * * * *', async (fireDate) => {
+    console.log('start the task...', fireDate)
+    try {
+      await getNewAds(api, socket)
+    } catch (error) {
+      logger.error(error, 'get new ads error')
+    }
+  })
+
   const signer = await getSigner()
   // nonce manager
   const nonceManager = new NonceManager(api)
+
+  socket.on('query-ads', async payload => {
+    console.log(payload, socket.id, 'request ads after enter---')
+    await getNewAds(api, socket, true)
+  })
 
   socket.on('create_by_sns', async payload => {
     try {
       const { unionid, type, shortIndex } = payload
       logger.info(unionid, type, shortIndex, 'creation params')
-      // social accounnt
-      // const hashedSid = blake2AsHex(unionid, 256)
-      // const hashedSid2 = blake2AsHex(`${hashedSid}1`, 256)
-
-      // social superior
-      // const hashedSocial = blake2AsHex(superior, 256)
-      // const didHash = await api.query.did.socialAccount(hashedSid2)
-      // if (!didHash.isEmpty) {
-      //   socket.emit('Created', {
-      //     status: { exists: true },
-      //     payload
-      //   })
-      //   return logger.info('账号已存在')
-      // }
 
       // find superior by short index
       const indexHash = blake2AsHex(shortIndex, 256)

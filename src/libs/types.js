@@ -1,4 +1,4 @@
-const types = {
+export default {
   Did: 'Vec<u8>',
   ExternalAddress: {
     btc: 'Vec<u8>',
@@ -29,15 +29,22 @@ const types = {
     group_name: 'Option<Vec<u8>>',
     external_address: 'ExternalAddress'
   },
+  AdsLinkedItem: {
+    prev: 'Option<AdIndex>',
+    next: 'Option<AdIndex>'
+  },
+  ActiveIndex: 'u64',
+  AdIndex: 'u64',
   AdsMetadata: {
     advertiser: 'Vec<u8>',
     topic: 'Vec<u8>',
     total_amount: 'Balance',
-    surplus: 'Balance',
-    gas_fee_used: 'Balance',
+    spend_amount: 'Balance',
     single_click_fee: 'Balance',
+    display_page: 'Vec<u8>',
+    landing_page: 'Option<Vec<u8>>',
     create_time: 'Moment',
-    period: 'Moment'
+    active: 'Option<ActiveIndex>'
   },
   EventHTLC: {
     eth_contract_addr: 'Vec<u8>',
@@ -48,22 +55,36 @@ const types = {
     swap_id: 'Hash',
     sender_addr: 'Vec<u8>',
     sender_chain_type: 'HTLCChain',
-    receiver_addr: 'AccountId',
+    receiver_addr: 'Hash',
     receiver_chain_type: 'HTLCChain',
     recipient_addr: 'Vec<u8>',
-    out_amount: 'Balance'
+    out_amount: 'Balance',
+    event_type: 'HTLCType'
   },
   HTLCChain: {
-    _enum: ['ETHMain', 'PRM']
+    _enum: [
+      'ETHMain',
+      'PRM'
+    ]
   },
   HTLCStates: {
-    _enum: ['INVALID', 'OPEN', 'COMPLETED', 'EXPIRED']
+    _enum: [
+      'INVALID',
+      'OPEN',
+      'COMPLETED',
+      'EXPIRED'
+    ]
   },
   EventLogSource: {
     event_name: 'Vec<u8>',
     event_url: 'Vec<u8>',
     event_data: 'Vec<u8>'
+  },
+  HTLCType: {
+    _enum: [
+      'HTLC',
+      'Claimed',
+      'Refunded'
+    ]
   }
 }
-
-export default types
