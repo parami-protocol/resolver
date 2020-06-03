@@ -11,7 +11,7 @@ const reissue = new Datastore({ filename: './db/reissue', autoload: true })
 
 const handleKafkaEvent = (events, status, producer, payload) => {
   const {
-    id, fromDid, trx, module, method
+    id, fromDid, trx, module, method: kMethod
   } = payload
   kafkaLogger.info('Transaction status:', status.type)
   if (status.type === 'Future' || status.type === 'Invalid') {
@@ -30,7 +30,7 @@ const handleKafkaEvent = (events, status, producer, payload) => {
             trx,
             block_hash: blockHash,
             module,
-            method
+            method: kMethod
           })
         }
       ]
@@ -76,7 +76,7 @@ const handleKafkaEvent = (events, status, producer, payload) => {
             id,
             status: tstatus,
             module,
-            method
+            method: kMethod
           })
         }
       ]
