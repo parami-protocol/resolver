@@ -22,7 +22,7 @@ const adsHistory = new Datastore({ filename: './db/adshistory', autoload: true }
 const getNewAds = async (api, socket, isOld) => {
   const did = global.socketToDid[socket.id]
   const ads = did && await getRecords(adsHistory, { did })
-  let adsId = ads ? ads.adsId : 0
+  let adsId = ads ? ads.adsId : -1
   let tries = 0
   let isBreak = true
   if (!isOld) adsId++
@@ -37,6 +37,7 @@ const getNewAds = async (api, socket, isOld) => {
           adsRecord[key] = hexToString(adsRecord[key])
         }
       })
+      console.log(adsRecord, 'ads records')
       if (!adsRecord.active) {
         adsId += 1
         tries += 1
