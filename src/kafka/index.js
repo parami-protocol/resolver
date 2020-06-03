@@ -11,7 +11,7 @@ const reissue = new Datastore({ filename: './db/reissue', autoload: true })
 
 const handleKafkaEvent = (events, status, producer, payload) => {
   const {
-    id, fromDid, trx
+    id, fromDid, trx, module, method
   } = payload
   kafkaLogger.info('Transaction status:', status.type)
   if (status.type === 'Future' || status.type === 'Invalid') {
@@ -28,7 +28,9 @@ const handleKafkaEvent = (events, status, producer, payload) => {
           value: JSON.stringify({
             id,
             trx,
-            block_hash: blockHash
+            block_hash: blockHash,
+            module,
+            method
           })
         }
       ]
@@ -72,7 +74,9 @@ const handleKafkaEvent = (events, status, producer, payload) => {
         {
           value: JSON.stringify({
             id,
-            status: tstatus
+            status: tstatus,
+            module,
+            method
           })
         }
       ]
@@ -108,7 +112,9 @@ export default async function kafkaConsumer(api) {
           // const {
           //   id, from_did: fromDid, to_did: toDid, amount, memo
           // } = JSON.parse(message.value.toString())
-          const { id, from_did: fromDid, module, method, parameters } = JSON.parse(message.value.toString())
+          const {
+            id, from_did: fromDid, module, method, parameters
+          } = JSON.parse(message.value.toString())
           const record = await getRecords(reissue, { id: `${fromDid}_${id}` })
           if (record) {
             kafkaLogger.info('this transaction already sent')
@@ -125,7 +131,7 @@ export default async function kafkaConsumer(api) {
 
           // transfer from airdrop account
           // const utx = api.tx.did
-            // .transfer(receiver, numberToHex(+amount), memo).sign(pair, { nonce })
+          // .transfer(receiver, numberToHex(+amount), memo).sign(pair, { nonce })
           const utx = api.tx[module][method](...parameters).sign(pair, { nonce })
           const trxHash = utx.hash.toHex()
           console.log(trxHash, 'transaction hash')
@@ -134,7 +140,9 @@ export default async function kafkaConsumer(api) {
               id,
               fromDid,
               address: pair.address,
-              trx: trxHash
+              trx: trxHash,
+              module,
+              method
             }
             handleKafkaEvent(events, status, producer, payload)
           })
