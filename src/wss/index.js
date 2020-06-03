@@ -19,13 +19,13 @@ const homedir = os.homedir()
 const faucet = new Datastore({ filename: './db/faucet', autoload: true })
 const adsHistory = new Datastore({ filename: './db/adshistory', autoload: true })
 
-const getNewAds = async (api, socket) => {
+const getNewAds = async (api, socket, isOld) => {
   const did = global.socketToDid[socket.id]
   const ads = did && await getRecords(adsHistory, { did })
-  let adsId = ads ? ads.adsId + 1 : 0
+  let adsId = ads ? ads.adsId : 0
   let tries = 0
   let isBreak = true
-  // console.log(isInit)
+  if (!isOld) adsId++
   while (isBreak) {
     // query ads
     const data = await api.query.ads.adsRecords(adsId)
@@ -43,7 +43,6 @@ const getNewAds = async (api, socket) => {
       } else {
         socket.emit('new-ads', { ...adsRecord, adsId })
         isBreak = false
-        adsId += 1
         adsHistory.update({
           did
         }, { did, adsId }, { upsert: true })
@@ -148,7 +147,8 @@ export default async function prochainWsServer(api, socket) {
 
   socket.on('query-ads', async payload => {
     console.log(payload, socket.id, 'request ads after enter---')
-    await getNewAds(api, socket, true)
+    const { type } = payload
+    await getNewAds(api, socket, type === 'old')
   })
 
   socket.on('create_by_sns', async payload => {

@@ -11,7 +11,7 @@ const reissue = new Datastore({ filename: './db/reissue', autoload: true })
 
 const handleKafkaEvent = (events, status, producer, payload) => {
   const {
-    id, fromDid, toDid, trx
+    id, fromDid, trx, module, method
   } = payload
   kafkaLogger.info('Transaction status:', status.type)
   if (status.type === 'Future' || status.type === 'Invalid') {
@@ -28,7 +28,9 @@ const handleKafkaEvent = (events, status, producer, payload) => {
           value: JSON.stringify({
             id,
             trx,
-            block_hash: blockHash
+            block_hash: blockHash,
+            module,
+            method
           })
         }
       ]
@@ -50,7 +52,7 @@ const handleKafkaEvent = (events, status, producer, payload) => {
     })
 
     const tstatus = isSuccessful ? 1 : 2
-    kafkaLogger.info(toDid, id, tstatus, hash)
+    kafkaLogger.info(id, tstatus, hash)
 
     // kafka transfer record
     if (isSuccessful) {
@@ -72,7 +74,9 @@ const handleKafkaEvent = (events, status, producer, payload) => {
         {
           value: JSON.stringify({
             id,
-            status: tstatus
+            status: tstatus,
+            module,
+            method
           })
         }
       ]
@@ -104,10 +108,13 @@ export default async function kafkaConsumer(api) {
     await consumer.run({
       eachMessage: async ({ message }) => {
         try {
+          // {"id":"ba40d230-95be-4636-8097-77f57825d343","from_did":"did:pra:LicW6oeEuLny8w9psXwvgAewBrgVb6iBT2","module":"ads","method":"distribute","parameters":[0,"did:pra:LkHmbT5qCubLfMBtyfzJHW8UEUopKprfTR"]}
+          // const {
+          //   id, from_did: fromDid, to_did: toDid, amount, memo
+          // } = JSON.parse(message.value.toString())
           const {
-            id, from_did: fromDid, to_did: toDid, amount, memo
+            id, from_did: fromDid, module, method, parameters
           } = JSON.parse(message.value.toString())
-
           const record = await getRecords(reissue, { id: `${fromDid}_${id}` })
           if (record) {
             kafkaLogger.info('this transaction already sent')
@@ -118,22 +125,24 @@ export default async function kafkaConsumer(api) {
           const keyring = new Keyring({ type: 'sr25519' })
           const seed = res.toString().replace(/[\r\n]/g, '')
           const pair = keyring.addFromMnemonic(seed)
-          const receiver = didToHex(toDid)
+          // const receiver = didToHex(toDid)
           const nonce = await nonceManager.getNonce(pair.address)
-          kafkaLogger.info(fromDid, toDid, amount, nonce, 'kafka transfer')
+          kafkaLogger.info(fromDid, parameters, nonce, 'kafka transaction')
 
           // transfer from airdrop account
-          const utx = api.tx.did
-            .transfer(receiver, numberToHex(+amount), memo).sign(pair, { nonce })
+          // const utx = api.tx.did
+          // .transfer(receiver, numberToHex(+amount), memo).sign(pair, { nonce })
+          const utx = api.tx[module][method](...parameters).sign(pair, { nonce })
           const trxHash = utx.hash.toHex()
           console.log(trxHash, 'transaction hash')
           utx.send(({ events = [], status }) => {
             const payload = {
               id,
               fromDid,
-              toDid,
               address: pair.address,
-              trx: trxHash
+              trx: trxHash,
+              module,
+              method
             }
             handleKafkaEvent(events, status, producer, payload)
           })
