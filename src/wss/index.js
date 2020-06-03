@@ -41,9 +41,9 @@ const getNewAds = async (api, socket) => {
         adsId += 1
         tries += 1
       } else {
-        socket.emit('new-ads', adsRecord)
+        socket.emit('new-ads', { ...adsRecord, adsId })
         isBreak = false
-        adsId+=1
+        adsId += 1
         adsHistory.update({
           did
         }, { did, adsId }, { upsert: true })
