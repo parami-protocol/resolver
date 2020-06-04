@@ -38,7 +38,7 @@ const getNewAds = async (api, socket, isOld) => {
         }
       })
       console.log(adsRecord, 'ads records')
-      if (!adsRecord.active) {
+      if (adsRecord.active === null) {
         adsId += 1
         tries += 1
       } else {
