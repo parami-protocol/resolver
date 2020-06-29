@@ -270,7 +270,8 @@ export default async function prochainWsServer(api, socket) {
       const { seed } = JSON.parse(res.toString())
       const pair = keyring.addFromMnemonic(seed)
 
-      const { nonce } = await api.query.system.account(address)
+      // const { nonce } = await api.query.system.account(address)
+      const nonce = await nonceManager.getNonce(address)
 
       /*  eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }]  */
       for (let i = 0; i < params.length; i++) {
