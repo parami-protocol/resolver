@@ -278,7 +278,14 @@ export default async function prochainWsServer(api, socket) {
       }
 
       logger.info(address, method, params, nonce - 0, 'sign params')
-      api.tx.did[method](...params)
+      let transact
+      if (method === 'forceLock') {
+        const proposal = api.tx.did[method](...params)
+        transact = api.tx.sudo.sudo(proposal)
+      } else {
+        transact = api.tx.did[method](...params)
+      }
+      transact
         .signAndSend(pair, { nonce },
           ({ events = [], status }) => {
             handleResult(events, status, socket, payload, api)
