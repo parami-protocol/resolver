@@ -27,6 +27,9 @@ const getNewAds = async (api, socket, isOld) => {
   let isBreak = true
   if (!isOld) adsId++
   while (isBreak) {
+    if (adsId === 0) {
+      adsId++
+    }
     // query ads
     const data = await api.query.ads.adsRecords(adsId)
     console.log(adsId, tries, data.active, data.isEmpty, 'data---------')
