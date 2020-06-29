@@ -87,12 +87,15 @@ const handleResult = (events, status, socket, payload, api) => {
     })
 
     if (txStatus) {
-      const { event: { data, method } } = events.filter(({ event }) => event.section === 'did').pop()
-      socket.emit(method, {
-        status,
-        msg: data.toString(),
-        payload
-      })
+      const curEvent = events.filter(({ event }) => event.section === 'did').pop()
+      if (curEvent) {
+        const { event: { data, method } } = curEvent
+        socket.emit(method, {
+          status,
+          msg: data.toString(),
+          payload
+        })
+      }
     } else {
       socket.emit('tx_failed', {
         status,
