@@ -228,12 +228,12 @@ export default async function prochainWsServer(api, socket) {
   socket.on('create_by_old', async payload => {
     try {
       /* eslint-disable */
-      let { pubkey, address, didType, superior, socialAccount, socialSuperior } = payload
+      let { pubkey, address, didType, superior, socialAccount, socialSuperior, isHash } = payload
       const nonce = await nonceManager.getNonce(signer.address)
 
       superior = isHex(superior) ?  superior : didToHex(superior)
       didType = stringToHex(didType)
-      socialAccount = socialAccount ? stringToHex(blake2AsHex(socialAccount, 256)) : null
+      if (!isHash) socialAccount = socialAccount ? stringToHex(blake2AsHex(socialAccount, 256)) : null
       socialSuperior = socialSuperior ? stringToHex(blake2AsHex(socialSuperior, 256)) : null
       logger.info(pubkey, address, didType, superior, socialAccount, socialSuperior, 'input data----')
       api.tx.did
