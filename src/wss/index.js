@@ -87,12 +87,15 @@ const handleResult = (events, status, socket, payload, api) => {
     })
 
     if (txStatus) {
-      const { event: { data, method } } = events.filter(({ event }) => event.section === 'did').pop()
-      socket.emit(method, {
-        status,
-        msg: data.toString(),
-        payload
-      })
+      const curEvent = events.filter(({ event }) => event.section === 'did').pop()
+      if (curEvent) {
+        const { event: { data, method } } = curEvent
+        socket.emit(method, {
+          status,
+          msg: data.toString(),
+          payload
+        })
+      }
     } else {
       socket.emit('tx_failed', {
         status,
@@ -270,7 +273,8 @@ export default async function prochainWsServer(api, socket) {
       const { seed } = JSON.parse(res.toString())
       const pair = keyring.addFromMnemonic(seed)
 
-      const { nonce } = await api.query.system.account(address)
+      // const { nonce } = await api.query.system.account(address)
+      const nonce = await nonceManager.getNonce(address)
 
       /*  eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }]  */
       for (let i = 0; i < params.length; i++) {
@@ -281,7 +285,14 @@ export default async function prochainWsServer(api, socket) {
       }
 
       logger.info(address, method, params, nonce - 0, 'sign params')
-      api.tx.did[method](...params)
+      let transact
+      if (method === 'forceLock') {
+        const proposal = api.tx.did[method](...params)
+        transact = api.tx.sudo.sudo(proposal)
+      } else {
+        transact = api.tx.did[method](...params)
+      }
+      transact
         .signAndSend(pair, { nonce },
           ({ events = [], status }) => {
             handleResult(events, status, socket, payload, api)
