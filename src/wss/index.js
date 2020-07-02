@@ -236,7 +236,11 @@ export default async function prochainWsServer(api, socket) {
 
       superior = isHex(superior) ?  superior : didToHex(superior)
       didType = stringToHex(didType)
-      if (!isHash) socialAccount = socialAccount ? stringToHex(blake2AsHex(socialAccount, 256)) : null
+      if (!isHash) {
+        socialAccount = socialAccount ? stringToHex(blake2AsHex(socialAccount, 256)) : null
+      } else {
+        socialAccount = stringToHex(socialAccount)
+      }
       socialSuperior = socialSuperior ? stringToHex(blake2AsHex(socialSuperior, 256)) : null
       logger.info(pubkey, address, didType, superior, socialAccount, socialSuperior, 'input data----')
       api.tx.did

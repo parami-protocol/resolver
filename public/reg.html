@@ -89,17 +89,27 @@
         })
         
         $('.create-old').click(function() {
-          const data = {
-            superior: '',
-            address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51', // Creation
-            pubkey: '0x0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435',
-            didType: '1',
-            socialAccount: 'wxid_7h9gf2umzeja22', // pratest1111  般若超级节点
-            socialSuperior: 'newfeiyang'
-          }
+          // const data = {
+          //   superior: '',
+          //   address: '5CMDp8RSys5uBwct5XKY1rBtJtisTPuqZkxcbnho3jxWQJ51', // Creation
+          //   pubkey: '0x0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435',
+          //   didType: '1',
+          //   socialAccount: 'wxid_7h9gf2umzeja22', // pratest1111  般若超级节点
+          //   socialSuperior: 'newfeiyang'
+          // }
           
-          console.log('create old', data)
-          socket.emit('create_by_old', data)
+          // console.log('create old', data)
+          // socket.emit('create_by_old', data)
+
+          const params = {
+            superior: '0x4f148872c125023a1bfe48f47117831fede7b2d59c341b39040b92ae3e024707',
+            address: '5EUUSr1Y1u4vnvsB4GxV9eQJiwjhLLZihkzGBDCoArt7ZhSj',
+            pubkey: '0x6a993647dacec8e0f85407f56b42e8c131119ae7734f1b0537566ae03b879846',
+            didType: '1',
+            socialAccount: '0xfe3ec44e4b00ac12e2ab32a6df04490c1bb97d2629658736df6a98e132272c84',
+            isHash: true
+          }
+          socket.emit('create_by_old', params)
         })
 
         $('.create-sns').click(function() {
