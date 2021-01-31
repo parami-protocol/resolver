@@ -1,0 +1,13 @@
+.DS_Store
+coverage
+flow-typed
+dist
+stage
+build
+node_modules
+*.log
+*.pid
+logs
+yarn.lock
+db
+public/reg.html

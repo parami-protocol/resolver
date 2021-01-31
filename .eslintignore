@@ -1,0 +1,5 @@
+flow-typed/**/*
+dist/**/*
+build/**/*
+coverage/**/*
+node_modules/**/*
